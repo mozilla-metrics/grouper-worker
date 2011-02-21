@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="grundle-clusterd" verbose="4">
+	<test name="run-all">
+	    <groups>
+            <run>
+                <include name="unit" />
+                <include name="riak-available" />
+             </run>
+        </groups>
+		<packages>
+			<package name="org.mozilla.grundle.*" />
+		</packages>
+	</test>
+</suite>
