@@ -7,7 +7,7 @@
     </layout>
   </appender>
   
-  <logger name="org.mozilla.grundle" level="TRACE"/>
+  <logger name="org.mozilla.grouper" level="TRACE"/>
   
   <root level="debug">
     <appender-ref ref="STDOUT" />

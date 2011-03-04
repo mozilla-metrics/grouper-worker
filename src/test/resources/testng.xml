@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 
-<suite name="grundle-clusterd" verbose="4">
+<suite name="grouper-clusterd" verbose="4">
 	<test name="run-all">
 	    <groups>
             <run>
@@ -10,7 +10,7 @@
              </run>
         </groups>
 		<packages>
-			<package name="org.mozilla.grundle.*" />
+			<package name="org.mozilla.grouper.*" />
 		</packages>
 	</test>
 </suite>

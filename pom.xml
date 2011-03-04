@@ -2,14 +2,14 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.mozilla.grundle</groupId>
-  <name>grundle</name>
+  <groupId>org.mozilla.grouper</groupId>
+  <name>grouper</name>
   <version>0.0.1-SNAPSHOT</version>
 
   <artifactId>worker</artifactId>
   <packaging>war</packaging>
   <description>Clustering engine for the web</description>
-  <url>https://github.com/michaelku/grundle</url>
+  <url>https://github.com/michaelku/grouper</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -53,7 +53,7 @@
   </dependencies>
 
   <build>
-    <finalName>grundleworker</finalName>
+    <finalName>grouper-worker</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -75,7 +75,7 @@
         <version>1.1</version>
         <configuration>
           <server>services-tomcat</server>
-          <path>/grundleworker</path>
+          <path>/grouper-worker</path>
         </configuration>
       </plugin>
 
@@ -99,7 +99,7 @@
               <addClasspath>true</addClasspath>
               <classpathPrefix>${settings.localRepository}</classpathPrefix>
               <classpathLayoutType>repository</classpathLayoutType>
-              <mainClass>org.mozilla.grundle.clusterd.Manage</mainClass>
+              <mainClass>org.mozilla.grouper.clusterd.Manage</mainClass>
             </manifest>
           </archive>
         </configuration>

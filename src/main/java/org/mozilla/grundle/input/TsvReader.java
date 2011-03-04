@@ -1,4 +1,4 @@
-package org.mozilla.grundle.input;
+package org.mozilla.grouper.input;
 
 import java.util.LinkedList;
 import java.util.List;

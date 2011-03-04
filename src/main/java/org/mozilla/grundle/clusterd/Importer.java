@@ -1,4 +1,4 @@
-package org.mozilla.grundle.clusterd;
+package org.mozilla.grouper.clusterd;
 
 import java.io.InputStream;
 import java.util.Iterator;
@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import java.util.concurrent.TimeUnit;
 
-import org.mozilla.grundle.input.Opinions;
+import org.mozilla.grouper.input.Opinions;
 
 import com.basho.riak.client.RiakClient;
 import com.basho.riak.client.RiakObject;

@@ -3,11 +3,11 @@
  "http://java.sun.com/dtd/web-app_2_3.dtd" >
 
 <web-app>
-  <display-name>Grundle Cluster Daemon</display-name>
+  <display-name>Grouperfish Clustering Worker</display-name>
   <servlet>
     <servlet-name>clusterd</servlet-name>
-    <display-name>Grundle clusterd Updater</display-name>
-    <servlet-class>org.mozilla.grundle.clusterd.Updater</servlet-class>
+    <display-name>Grouperfish clustering worker</display-name>
+    <servlet-class>org.mozilla.grouper.clusterd.Updater</servlet-class>
   </servlet>
   <servlet-mapping>
    <servlet-name>clusterd</servlet-name>

@@ -1,4 +1,4 @@
-package org.mozilla.grundle.clusterd;
+package org.mozilla.grouper.clusterd;
 
 import java.io.IOException;
 

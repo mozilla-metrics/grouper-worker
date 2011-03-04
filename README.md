@@ -1,7 +1,7 @@
-Grundle clusterd
-================
+Grouperfish clusterd
+====================
 
-Background clustering for [grundle](http://github.com/michaelku/grundle).
+Background clustering for [grouperfish](http://github.com/michaelku/grouperfish).
 
 
 How can I use it?

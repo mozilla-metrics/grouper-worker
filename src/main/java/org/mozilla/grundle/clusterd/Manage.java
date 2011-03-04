@@ -1,4 +1,4 @@
-package org.mozilla.grundle.clusterd;
+package org.mozilla.grouper.clusterd;
 
 import com.basho.riak.client.RiakClient;
 import com.basho.riak.client.request.RequestMeta;

@@ -1,4 +1,4 @@
-package org.mozilla.grundle.input;
+package org.mozilla.grouper.input;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
