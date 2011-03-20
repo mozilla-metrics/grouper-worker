@@ -6,15 +6,24 @@
   <name>grouper</name>
   <version>0.0.1-SNAPSHOT</version>
 
-  <artifactId>worker</artifactId>
+  <artifactId>grouperfish</artifactId>
   <packaging>war</packaging>
   <description>Clustering engine for the web</description>
-  <url>https://github.com/michaelku/grouper</url>
+  <url>https://github.com/michaelku/grouperfish</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <skip.tests>false</skip.tests>
   </properties>
+  
+  <repositories>
+    <repository>
+      <id>cdh.release.repo</id>
+      <url>https://repository.cloudera.com/content/repositories/releases</url>
+      <name>Cloudera Releases Repository</name>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -38,9 +47,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.basho.riak</groupId>
-      <artifactId>riak-client</artifactId>
-      <version>0.14.1-SNAPSHOT</version>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1</version>
     </dependency>
 
     <dependency>
@@ -50,6 +59,24 @@
       <classifier>jdk15</classifier>
       <scope>test</scope>
     </dependency>
+    
+    
+    <dependency>
+      <groupId>org.apache.mahout</groupId>
+      <artifactId>mahout-core</artifactId>
+      <version>0.5-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-core</artifactId>
+      <version>0.20.2-CDH3B4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase</artifactId>
+      <version>0.90.1-CDH3B4</version>
+    </dependency>
+    
   </dependencies>
 
   <build>
