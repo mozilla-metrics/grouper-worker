@@ -26,7 +26,7 @@ public class Opinions {
     public Iterable<Document> byTypeByVersionByProduct(final InputStream in) {
         return new BaseIterable(in) {
             CollectionRef collectionRef(String[] row) {
-                String key = String.format("%s/%s/%s", row[Field.PRODUCT.i], row[Field.VERSION.i], row[Field.TYPE.i]);
+                String key = String.format("%s,%s,%s", row[Field.PRODUCT.i], row[Field.VERSION.i], row[Field.TYPE.i]);
                 return new CollectionRef(namespace_, key);
             }
         };

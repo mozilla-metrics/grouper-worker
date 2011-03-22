@@ -13,7 +13,7 @@ public class Configuration {
 
     public final String hbase() { return hbase_; }
     public final String redis() { return redis_; }
-    public final String amqp() { return amqp_; }
+    public final String amqp() { return rabbitmq_; }
     public final String prefix() { return prefix_; }
 
     public static final String DEFAULT_PREFIX = "gfish_";
@@ -26,11 +26,10 @@ public class Configuration {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> conf = (Map<String, Object>) new JSONParser().parse(inFile, 
                                                                                         containers);
-                return new Configuration((String)conf.get("hbase"), 
+                return new Configuration((String)conf.get("hbaseZk"), 
                                          (String)conf.get("redis"), 
-                                         (String)conf.get("amqp"), 
+                                         (String)conf.get("rabbitmq"), 
                                          conf);
-               
             } finally {
                 inFile.close();
             }
@@ -46,7 +45,7 @@ public class Configuration {
     
     private final String hbase_;
     private final String redis_;
-    private final String amqp_;
+    private final String rabbitmq_;
     
     private final String prefix_;
     
@@ -59,16 +58,16 @@ public class Configuration {
     
     private Configuration(final String hbase,
                           final String redis,
-                          final String amqp,
+                          final String rabbitqm,
                           final Map<String, Object> more) {
         hbase_ = hbase;
         redis_ = redis;
-        amqp_ = amqp;
+        rabbitmq_ = rabbitqm;
         
         prefix_ = more.containsKey("prefix") ? (String)more.get("prefix") : DEFAULT_PREFIX;
         
         // fail fast
-        Assert.nonNull(hbase_, redis_, amqp_, prefix_);
+        Assert.nonNull(hbase_, redis_, rabbitmq_, prefix_);
     }
 
 }

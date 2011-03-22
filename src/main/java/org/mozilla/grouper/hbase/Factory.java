@@ -12,7 +12,7 @@ public class Factory {
 
     public Factory(Configuration conf) {
         conf_ = conf;
-        hbaseConf_ = new HBaseConfiguration();
+        hbaseConf_ = HBaseConfiguration.create();
         // hbaseConf_.set("hbase.zookeeper.quorum", conf_.hbase());
     }
     
@@ -21,12 +21,16 @@ public class Factory {
                                                    Bytes.toBytes(conf_.tableName(name)));
     }
     
+    public void release(HTableInterface table) {
+        tableFactory_.releaseHTableInterface(table);
+    }
+    
     /** Row keys that are (hopefully) in sync with those used by the REST service! */
     public Keys keys() {
         return new SimpleKeys();
     }
     
     private final Configuration conf_;
-    private final HBaseConfiguration hbaseConf_;    
+    private final org.apache.hadoop.conf.Configuration hbaseConf_;    
     private final HTableInterfaceFactory tableFactory_ = new HTableFactory();
 }

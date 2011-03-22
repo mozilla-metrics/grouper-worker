@@ -1,4 +1,4 @@
-package org.mozilla.grouper.manage;
+package org.mozilla.grouper.cli;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -10,15 +10,16 @@ import org.mozilla.grouper.hbase.Importer;
 import org.mozilla.grouper.input.Opinions;
 
 
-public class Manager {
+public class Cli {
 
     static private final String USAGE =
-        "Usage: java -jar grouperfish.jar [--config PATH] [import <ns> | list <ns> <ck> | help]\n" +
+        "Usage: java -jar grouperfish.jar [--config PATH] \\" +
+        "              [import <ns> | collection-info <ns> <ck> | help]\n" +
         "   load    read (opinion) data from stdin\n" +
         "   list    prints all documents of the given collection\n" + 
         "   help    print this message and exit";
    
-    public Manager(Configuration conf) {
+    public Cli(Configuration conf) {
         conf_ = conf;
     }
 
@@ -57,10 +58,10 @@ public class Manager {
             exit(USAGE, 0);
         
         if ("import".equals(command) && cmdArgs.size() == 1)
-            new Manager(conf).load(cmdArgs.get(0), System.in);
+            new Cli(conf).load(cmdArgs.get(0), System.in);
         
         else if ("list".equals(command) && cmdArgs.size() >= 2)
-            new Manager(conf).list(cmdArgs.get(0), cmdArgs.get(1));
+            new Cli(conf).collectionInfo(cmdArgs.get(0), cmdArgs.get(1));
         
         else 
             exit(USAGE, 1);
@@ -68,7 +69,7 @@ public class Manager {
     
     private final Configuration conf_;
     
-    public void list(String namespace, String collectionKey) {
+    public void collectionInfo(String namespace, String collectionKey) {
         Factory f = new Factory(conf_);
         f.table("documents");
         // do something like this, for hbase....
