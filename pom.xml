@@ -41,12 +41,6 @@
     </dependency>
 
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>0.9.18</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.googlecode.json-simple</groupId>
       <artifactId>json-simple</artifactId>
       <version>1.1</version>
@@ -59,13 +53,20 @@
       <classifier>jdk15</classifier>
       <scope>test</scope>
     </dependency>
-    
-    
+
+    <dependency>
+      <artifactId>slf4j-api</artifactId>
+      <groupId>org.slf4j</groupId>
+      <version>1.5.8</version>
+    </dependency>
+
+    <!--
     <dependency>
       <groupId>org.apache.mahout</groupId>
       <artifactId>mahout-core</artifactId>
       <version>0.5-SNAPSHOT</version>
     </dependency>
+    -->
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-core</artifactId>
@@ -126,7 +127,7 @@
               <addClasspath>true</addClasspath>
               <classpathPrefix>${settings.localRepository}</classpathPrefix>
               <classpathLayoutType>repository</classpathLayoutType>
-              <mainClass>org.mozilla.grouper.clusterd.Manage</mainClass>
+              <mainClass>org.mozilla.grouper.cli.Cli</mainClass>
             </manifest>
           </archive>
         </configuration>
