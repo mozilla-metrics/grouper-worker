@@ -17,7 +17,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.Export;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -35,10 +34,7 @@ import org.mozilla.grouper.model.CollectionRef;
  * 
  * This is part of the full rebuild and a prerequisite for vectorization.
  */
-public class Build extends Configured implements Tool {    
-    
-    // just FR,  remove this
-    Export export;
+public class Build extends Configured implements Tool {        
     
     static class ExportMapper extends TableMapper<ImmutableBytesWritable, Result> {
         public static enum Counters {
