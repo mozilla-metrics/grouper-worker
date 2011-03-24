@@ -17,6 +17,12 @@ import org.mozilla.grouper.model.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.mozilla.grouper.hbase.Schema.CF_CONTENT;
+import static org.mozilla.grouper.hbase.Schema.COLLECTION_KEY;
+import static org.mozilla.grouper.hbase.Schema.NAMESPACE;
+import static org.mozilla.grouper.hbase.Schema.ID;
+import static org.mozilla.grouper.hbase.Schema.TEXT;
+
 
 /**
  * Parallel importer of stuff into Hbase.
@@ -27,7 +33,7 @@ public class Importer {
     private final ThreadLocal<HTableInterface> table_ = new ThreadLocal<HTableInterface>();
     
     private static final Logger LOG = LoggerFactory.getLogger(Importer.class); 
-    private static final int BATCH_SIZE = 50;
+    private static final int BATCH_SIZE = 1000;
     
     private final Factory factory_;    
     private final Keys keys_;
@@ -43,7 +49,7 @@ public class Importer {
         final List<HTableInterface> tables_ = new java.util.LinkedList<HTableInterface>();
         
         final ExecutorService pool = new ThreadPoolExecutor(
-                5, 15, 90, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100),
+                10, 20, 90, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100),
                 new ThreadFactory() {
                     public Thread newThread(Runnable r) {
                         final HTableInterface workerTable = factory_.table("documents");
@@ -68,6 +74,7 @@ public class Importer {
         int i = 1; // != 0 so % does not hit right away
         List<Document> batch = new ArrayList<Document>(BATCH_SIZE); 
         for (Document doc : docs) {
+            if (doc.text().length() == 0) continue;
             batch.add(doc);
             if (i % BATCH_SIZE == 0) { 
                 pool.submit(new Insert(batch));
@@ -100,11 +107,7 @@ public class Importer {
     }
     
 
-    private final byte[] CONTENT = Bytes.toBytes("content");
-    private final byte[] NAMESPACE = Bytes.toBytes("namespace");
-    private final byte[] COLLECTION_KEY = Bytes.toBytes("collectionKey");
-    private final byte[] ID = Bytes.toBytes("id");
-    private final byte[] TEXT = Bytes.toBytes("text");
+
     class Insert implements Runnable {
         private final List<Document>  docs_;
         Insert(final List<Document>  docs) { docs_ = docs; }
@@ -112,10 +115,10 @@ public class Importer {
             List<Put> batch = new ArrayList<Put>(docs_.size());
             for (Document doc : docs_) {
                 batch.add(new Put(Bytes.toBytes(keys_.key(doc)))
-                          .add(CONTENT, NAMESPACE, Bytes.toBytes(doc.ref().ownerRef().namespace()))
-                          .add(CONTENT, COLLECTION_KEY, Bytes.toBytes(doc.ref().ownerRef().key()))
-                          .add(CONTENT, ID, Bytes.toBytes(doc.ref().id()))
-                          .add(CONTENT, TEXT, Bytes.toBytes(doc.text())));
+                          .add(CF_CONTENT, NAMESPACE, Bytes.toBytes(doc.ref().ownerRef().namespace()))
+                          .add(CF_CONTENT, COLLECTION_KEY, Bytes.toBytes(doc.ref().ownerRef().key()))
+                          .add(CF_CONTENT, ID, Bytes.toBytes(doc.ref().id()))
+                          .add(CF_CONTENT, TEXT, Bytes.toBytes(doc.text())));
             }
             try {
                 table_.get().put(batch);

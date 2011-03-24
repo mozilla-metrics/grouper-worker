@@ -39,7 +39,8 @@ public class Opinions {
             return new Iterator<Document>() {
                 public Document next() {
                     final String[] row = rows_.next();
-                    return new Document(new DocumentRef(collectionRef(row), row[Field.ID.i]), row[Field.TEXT.i]);
+                    return new Document(new DocumentRef(collectionRef(row), row[Field.ID.i]), 
+                                        row[Field.TEXT.i]);
                 }        
                 public boolean hasNext() { return rows_.hasNext(); }
                 public void remove() { throw new UnsupportedOperationException(); }

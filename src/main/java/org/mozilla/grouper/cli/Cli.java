@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import org.mozilla.grouper.base.Configuration;
+import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.hbase.Factory;
 import org.mozilla.grouper.hbase.Importer;
 import org.mozilla.grouper.input.Opinions;
@@ -19,7 +19,7 @@ public class Cli {
         "   list    prints all documents of the given collection\n" + 
         "   help    print this message and exit";
    
-    public Cli(Configuration conf) {
+    public Cli(Config conf) {
         conf_ = conf;
     }
 
@@ -30,8 +30,7 @@ public class Cli {
     
     static public void main(final String[] args) {
         List<String> arguments = Arrays.asList(args);
-        
-        String configFile = "grouperconf.json";
+        String configPath = null;
         int i = 0;
         {
             while (arguments.size() > i && arguments.get(i).startsWith("--")) {
@@ -39,7 +38,7 @@ public class Cli {
                     exit(USAGE, 0);
                 }
                 if ("--config".equals(arguments.get(i))) {
-                    configFile = arguments.get(++i);
+                    configPath = arguments.get(++i);
                 }
                 else {
                     exit(USAGE, 1);
@@ -48,7 +47,7 @@ public class Cli {
             }
             if (arguments.size() == i) exit(USAGE, 1);
         }
-        final Configuration conf = Configuration.fromJsonFile(configFile);
+        final Config conf = new Config(configPath);
         
         final String command = arguments.get(i);
         ++i;
@@ -67,7 +66,7 @@ public class Cli {
             exit(USAGE, 1);
     }
     
-    private final Configuration conf_;
+    private final Config conf_;
     
     public void collectionInfo(String namespace, String collectionKey) {
         Factory f = new Factory(conf_);
