@@ -21,7 +21,7 @@ public class Config {
     // Also we might want to have a generic mechanism to specify hbase/redis/rabbitmq client props.
     public String keyScheme() { return keyScheme_; }
     public String prefix() { return prefix_; }
-    public String hadoopPath() { return hadoopBase_; }
+    public String dfsBase() { return dfsBase_; }
     public String redis() { return redis_; }
     public String amqp() { return rabbitmq_; }
     public String hbaseZk() { return hbaseZk_; }
@@ -35,7 +35,7 @@ public class Config {
         map.put("rabbitmq",    rabbitmq_);
         map.put("prefix",      prefix_);
         map.put("keyScheme",   keyScheme_);
-        map.put("hadoopBase",  hadoopBase_);
+        map.put("dfsBase",  dfsBase_);
         if (hbaseZk_ != null) map.put("hbaseZk", hbaseZk_);
         if (hbaseZkNode_ != null) map.put("hbaseZkNode", hbaseZkNode_);
 
@@ -52,7 +52,7 @@ public class Config {
         rabbitmq_    = require("rabbitmq", map, null);
         prefix_      = require("prefix", map, null);
         keyScheme_   = require("keyScheme", map, null);
-        hadoopBase_  = require("hadoopBase", map, null);
+        dfsBase_  = require("dfsBase", map, null);
         hbaseZk_     = get("hbaseZk", map, null);
         hbaseZkNode_ = get("hbaseZkNode", map, null);
     }
@@ -96,7 +96,7 @@ public class Config {
         rabbitmq_   = require("rabbitmq",  values, defaults);
         prefix_     = require("prefix",    values, defaults);
         keyScheme_  = require("keyScheme", values, defaults);
-        hadoopBase_ = require("hadoopBase", values, defaults);
+        dfsBase_ = require("dfsBase", values, defaults);
 
         hbaseZk_     = get("hbaseZk",     values, defaults);
         hbaseZkNode_ = get("hbaseZkNode", values, defaults);
@@ -145,7 +145,7 @@ public class Config {
     private final String rabbitmq_;
     private final String keyScheme_;
     private final String prefix_;
-    private final String hadoopBase_;
+    private final String dfsBase_;
     private final String hbaseZk_;
     private final String hbaseZkNode_;
 

@@ -10,6 +10,8 @@ import org.apache.hadoop.util.Tool;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
 
+// import org.apache.mahout.driver.MahoutDriver;
+
 /**
  * Stores and reads Grouperfish configuration to/from hadoop config.
  * This way configuration values are transmitted to map/reduce tasks.
@@ -51,7 +53,12 @@ public class Util {
     public int run(String toolName, String[] args) {
         Configuration hadoopConf = HBaseConfiguration.create();
         Tool tool = null;
-        if ("build".equals(toolName)) tool = new Build(conf_, hadoopConf);
+        if (ExportDocuments.NAME.equals(toolName)) {
+            tool = new ExportDocuments(conf_, hadoopConf);
+        }
+        else if (VectorizeDocuments.NAME.equals(toolName)) {
+            tool = new VectorizeDocuments(conf_, hadoopConf);
+        }
         Assert.nonNull(tool);
 
         String[] otherArgs;
@@ -71,5 +78,4 @@ public class Util {
             return 1;
         }
     }
-
 }

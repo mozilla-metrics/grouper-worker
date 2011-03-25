@@ -18,7 +18,7 @@ public class Cli {
         "              [import <ns> | collection-info <ns> <ck> | help]\n" +
         " import    read (opinion) data from stdin\n" +
         "   list    prints all documents of the given collection\n" +
-        "  build    cluster rebuild\n" +
+        "  job:*    start a hadoop job, such as a full cluster rebuild \n" +
         "   help    print this message and exit";
 
     public Cli(Config conf) {
@@ -59,21 +59,22 @@ public class Cli {
         ++i;
         final List<String> cmdArgs = arguments.subList(i, arguments.size());
 
-        if ("help".equals(command))
+        if ("help".equals(command)) {
             exit(USAGE, 0);
+        }
 
-
-        if ("import".equals(command) && cmdArgs.size() == 1)
+        if ("import".equals(command) && cmdArgs.size() == 1) {
             new Cli(conf).load(cmdArgs.get(0), System.in);
-
-        else if ("list".equals(command) && cmdArgs.size() >= 2)
+        }
+        else if ("list".equals(command) && cmdArgs.size() >= 2) {
             new Cli(conf).collectionInfo(cmdArgs.get(0), cmdArgs.get(1));
-
-        else if ("build".equals(command))
-            exit(new Util(conf).run(command, cmdArgs.toArray(new String[]{})));
-
-        else
+        }
+        else if (command.startsWith("job:")) {
+            exit(new Util(conf).run(command.substring(4), cmdArgs.toArray(new String[]{})));
+        }
+        else {
             exit(USAGE, 1);
+        }
     }
 
     private final Config conf_;

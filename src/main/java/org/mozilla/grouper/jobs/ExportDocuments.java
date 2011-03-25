@@ -5,12 +5,7 @@ import static org.mozilla.grouper.hbase.Schema.ID;
 import static org.mozilla.grouper.hbase.Schema.TEXT;
 import static org.mozilla.grouper.hbase.Schema.T_DOCUMENTS;
 
-import java.io.IOException;
-import java.util.Date;
-
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Result;
@@ -20,11 +15,10 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-import org.apache.hadoop.util.Tool;
-import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.hbase.Factory;
 import org.mozilla.grouper.model.CollectionRef;
@@ -33,15 +27,17 @@ import org.mozilla.grouper.model.CollectionRef;
  * Export all documents into a directory, one file per map-task.
  *
  * This is part of the full rebuild and a prerequisite for vectorization.
+ *
+ * :TODO: We want a better partitioner (or something) here, so that regions
+ * are only scanned if they can contain values with our prefix.
  */
-public class Build extends Configured implements Tool {
+public class ExportDocuments extends AbstractCollectionTool {
 
-    final static String NAME = "build";
-    public static final String TOOL_USAGE = "Usage: ... build NAMESPACE COLLECTION_KEY";
+    final static String NAME = "export_documents";
+    public static final String TOOL_USAGE = "%s NAMESPACE COLLECTION_KEY\n";
 
-    static class ExportMapper extends TableMapper<ImmutableBytesWritable, Result> {
+    static class ExportMapper extends TableMapper<Text, Text> {
         public static enum Counters {
-            ROWS_PROCESSED,
             ROWS_USED
         }
 
@@ -50,38 +46,29 @@ public class Build extends Configured implements Tool {
                            Result row,
                            ExportMapper.Context context)
         throws java.io.IOException, InterruptedException {
-            context.getCounter(Counters.ROWS_PROCESSED).increment(1);
+            context.getCounter(Counters.ROWS_USED).increment(1);
             byte[] documentID = row.getColumnLatest(CF_CONTENT, ID).getValue();
             KeyValue text = row.getColumnLatest(CF_CONTENT, TEXT);
-            context.write(new ImmutableBytesWritable(documentID),
-                          new Result(new KeyValue[]{text}));
+            context.write(new Text(documentID), new Text(text.getValue()));
         };
     }
 
-    private final Config conf_;
+    public ExportDocuments(Config conf, Configuration hadoopConf) { super(conf, hadoopConf); }
 
-    private String outputDir(Config conf, CollectionRef collection, long start) {
-        String nsMd5 = DigestUtils.md5Hex(Bytes.toBytes(collection.namespace())).substring(0, 6);
-        String ckMd5 = DigestUtils.md5Hex(Bytes.toBytes(collection.key())).substring(0, 6);
-        String ts = Long.toString(start);
-        return new StringBuilder().append(conf.hadoopPath()).append('/').append(ts).append('/')
-               .append(nsMd5).append(ckMd5).toString();
-    }
-
-    private Job createSubmittableJob(CollectionRef collection) throws IOException {
+    @Override
+    protected Job createSubmittableJob(CollectionRef collection, long timestamp) throws Exception {
         final Configuration hadoopConf = this.getConf();
         new Util(conf_).saveConfToHadoopConf(hadoopConf);
 
         final Factory factory = new Factory(conf_);
-        final long start = new Date().getTime();
-        final String jobName = "grouper_" + collection.namespace() + "_" + collection.key();
-        final String outputDir = outputDir(conf_, collection, start);
+        final String outputDir = outputDir(collection, timestamp);
+        final String jobName = jobName(collection, timestamp);
         final Job job = new Job(hadoopConf, jobName);
-        job.setJarByClass(Build.class);
+        job.setJarByClass(AbstractCollectionTool.class);
         job.setNumReduceTasks(0);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
-        job.setOutputKeyClass(ImmutableBytesWritable.class);
-        job.setOutputValueClass(Result.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
         FileOutputFormat.setOutputPath(job, new Path(outputDir));
 
         // Set optional scan parameters
@@ -93,25 +80,7 @@ public class Build extends Configured implements Tool {
         return job;
     }
 
-    private int usage(int status) {
-        (status == 0 ? System.out : System.err).println(TOOL_USAGE);
-        return status;
-    }
-
     @Override
-    public int run(String[] args) throws Exception {
-        if (args.length > 0 && "help".equals(args[0])) return usage(0);
-        if (args.length != 2) return usage(1);
-        CollectionRef collection = new CollectionRef(args[0], args[1]);
-        Job job = createSubmittableJob(collection);
-        return job.waitForCompletion(true) ? 0 : 1;
-    }
-
-
-    public Build(Config conf, Configuration hadoopConf) {
-        Assert.nonNull(conf, hadoopConf);
-        this.setConf(hadoopConf);
-        conf_ = conf;
-    }
+    protected String name() { return NAME; }
 
 }

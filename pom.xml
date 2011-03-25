@@ -2,14 +2,16 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.mozilla.grouper</groupId>
-  <name>grouper</name>
-  <version>0.0.1-SNAPSHOT</version>
+  <groupId>org.mozilla.grouperfish</groupId>
+  <artifactId>grouperfish-worker</artifactId>
+  <version>0.0.2-SNAPSHOT</version>
 
-  <artifactId>grouperfish</artifactId>
-  <packaging>war</packaging>
-  <description>Clustering engine for the web</description>
+  <name>Grouperfish Worker</name>
+  <description>Clustering engine for the web (worker process)</description>
   <url>https://github.com/michaelku/grouperfish</url>
+
+  <!-- TODO: change this to war again, for incremental updates... -->
+  <packaging>jar</packaging>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -66,18 +68,27 @@
       <version>1.5.8</version>
     </dependency>
 
-    <!--
+    <!-- local repository / Mahout snapshot -->
     <dependency>
       <groupId>org.apache.mahout</groupId>
       <artifactId>mahout-core</artifactId>
       <version>0.5-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>hbase</artifactId>
+          <groupId>org.apache.mahout.hbase</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
-    -->
+
+    <!-- cloudera repository -->
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-core</artifactId>
       <version>0.20.2-CDH3B4</version>
+      <scope>provided</scope>
     </dependency>
+    
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase</artifactId>
@@ -87,7 +98,7 @@
   </dependencies>
 
   <build>
-    <finalName>grouper-worker</finalName>
+    <finalName>grouperfish</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -104,12 +115,29 @@
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <!-- configure the plugin here -->
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>tomcat-maven-plugin</artifactId>
         <version>1.1</version>
         <configuration>
           <server>services-tomcat</server>
-          <path>/grouper-worker</path>
+          <path>/grouperfish</path>
         </configuration>
       </plugin>
 
@@ -121,6 +149,36 @@
           <source>1.6</source>
           <target>1.6</target>
         </configuration>
+      </plugin>
+
+      <!-- create a grouperfish jar that can be used for hadoop jobs, 
+           cause it includes dependencies -->
+      <!-- TODO: we'll need to use a different way to distribute 
+           dependencies because we can't very well ship off a .war file 
+           to hadoop... or can we? -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>job</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <skipAssembly>${mahout.skip.example}</skipAssembly>
+              <descriptors>
+                <descriptor>src/main/assembly/job.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifest>
+                  <mainClass>org.mozilla.grouper.cli.Cli</mainClass>
+                </manifest>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
