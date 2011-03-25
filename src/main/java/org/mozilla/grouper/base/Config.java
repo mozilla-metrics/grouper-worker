@@ -67,23 +67,22 @@ public class Config {
      */
     public Config(String configPath) {
         final char S = File.separatorChar;
-        String home;
-        try {
-            home = System.getenv("GROUPERFISH_HOME");
-        }
-        catch (NullPointerException npe) {
+        String home = null;
+        try { home = System.getenv("GROUPERFISH_HOME"); }
+        catch (NullPointerException npe) { /* nom nom */  }
+        if (home == null) {
             String p = new StringBuilder("..").append(S).append("..").append(S).toString();
             home = new File(p).getAbsolutePath();
         }
         
         // Load defaults (if available)
-        final String defaultsPath = new StringBuilder(home).append(S).append("config").append(S)
+        final String defaultsPath = new StringBuilder(home).append(S).append("conf").append(S)
                                     .append("defaults.json").toString();
         final Map<String, Object> defaults = map(defaultsPath);
         
         // Load user config
         if (configPath == null) {
-            configPath = new StringBuilder(home).append(S).append("config").append(S)
+            configPath = new StringBuilder(home).append(S).append("conf").append(S)
                          .append("grouperfish.json").toString();
         }
         final Map<String, Object> values = map(configPath);
@@ -127,8 +126,10 @@ public class Config {
     }
     
     private String get(String key, Map<String, ? extends Object> map, Map<String, Object> defaults) {
-        if (map.containsKey(key)) return map.get(key).toString();
-        if (defaults != null && defaults.containsKey(key)) return defaults.get(key).toString();
+        if (map != null && map.containsKey(key) && map.get(key) != null) 
+            return map.get(key).toString();
+        if (defaults != null && defaults.containsKey(key) && defaults.get(key) != null) 
+            return defaults.get(key).toString();
         return null;
     }
     

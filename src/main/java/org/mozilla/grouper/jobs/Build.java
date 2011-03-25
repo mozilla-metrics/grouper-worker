@@ -24,9 +24,9 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.hbase.Factory;
-import org.mozilla.grouper.hbase.Util;
 import org.mozilla.grouper.model.CollectionRef;
 
 /** 
@@ -34,8 +34,11 @@ import org.mozilla.grouper.model.CollectionRef;
  * 
  * This is part of the full rebuild and a prerequisite for vectorization.
  */
-public class Build extends Configured implements Tool {        
+public class Build extends Configured implements Tool {
     
+    final static String NAME = "build";
+    public static final String TOOL_USAGE = "Usage: ... build NAMESPACE COLLECTION_KEY";
+
     static class ExportMapper extends TableMapper<ImmutableBytesWritable, Result> {
         public static enum Counters {
             ROWS_PROCESSED,
@@ -54,8 +57,10 @@ public class Build extends Configured implements Tool {
                           new Result(new KeyValue[]{text}));
         };
     }
-    
-    public String outputDir(Config conf, CollectionRef collection, long start) {
+
+    private final Config conf_;
+
+    private String outputDir(Config conf, CollectionRef collection, long start) {
         String nsMd5 = DigestUtils.md5Hex(Bytes.toBytes(collection.namespace())).substring(0, 6);
         String ckMd5 = DigestUtils.md5Hex(Bytes.toBytes(collection.key())).substring(0, 6);
         String ts = Long.toString(start);
@@ -63,14 +68,14 @@ public class Build extends Configured implements Tool {
                .append(nsMd5).append(ckMd5).toString();
     }
 
-    public Job createSubmittableJob(Config conf, CollectionRef collection) throws IOException {
+    private Job createSubmittableJob(CollectionRef collection) throws IOException {
         final Configuration hadoopConf = this.getConf();
-        new Util(conf).saveToHadoopConf(conf, hadoopConf);
+        new Util(conf_).saveConfToHadoopConf(hadoopConf);
         
-        final Factory factory = new Factory(conf);
+        final Factory factory = new Factory(conf_);
         final long start = new Date().getTime();
         final String jobName = "grouper_" + collection.namespace() + "_" + collection.key();
-        final String outputDir = outputDir(conf, collection, start);
+        final String outputDir = outputDir(conf_, collection, start);
         final Job job = new Job(hadoopConf, jobName);
         job.setJarByClass(Build.class);
         job.setNumReduceTasks(0);
@@ -89,19 +94,23 @@ public class Build extends Configured implements Tool {
     }
    
     private int usage(int status) {
-        (status == 0 ? System.out : System.err).println(USAGE);
+        (status == 0 ? System.out : System.err).println(TOOL_USAGE);
         return status;
     }
 
-    public static final String USAGE =
-        "Usage: hadoop jar grouperfish.jar org.mozilla.grouper.jobs.WriteDocs ns ck [CONFIG_PATH]";
-        
     public int run(String[] args) throws Exception {
-        if (args.length < 2 || args.length > 3) return usage(1);
+        if (args.length > 0 && "help".equals(args[0])) return usage(0);
+        if (args.length != 2) return usage(1);
         CollectionRef collection = new CollectionRef(args[0], args[1]);
-        Config conf = new Config(args.length > 2 ? args[2] : null);
-        Job job = createSubmittableJob(conf, collection);
+        Job job = createSubmittableJob(collection);
         return job.waitForCompletion(true) ? 0 : 1;
+    }
+
+    
+    public Build(Config conf, Configuration hadoopConf) {
+        Assert.nonNull(conf, hadoopConf);
+        this.setConf(hadoopConf);
+        conf_ = conf;
     }
 
 }
