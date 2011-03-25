@@ -1,9 +1,9 @@
 package org.mozilla.grouper.jobs;
 
-import static org.mozilla.grouper.hbase.Schema.T_DOCUMENTS;
 import static org.mozilla.grouper.hbase.Schema.CF_CONTENT;
 import static org.mozilla.grouper.hbase.Schema.ID;
 import static org.mozilla.grouper.hbase.Schema.TEXT;
+import static org.mozilla.grouper.hbase.Schema.T_DOCUMENTS;
 
 import java.io.IOException;
 import java.util.Date;
@@ -29,13 +29,13 @@ import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.hbase.Factory;
 import org.mozilla.grouper.model.CollectionRef;
 
-/** 
+/**
  * Export all documents into a directory, one file per map-task.
- * 
+ *
  * This is part of the full rebuild and a prerequisite for vectorization.
  */
 public class Build extends Configured implements Tool {
-    
+
     final static String NAME = "build";
     public static final String TOOL_USAGE = "Usage: ... build NAMESPACE COLLECTION_KEY";
 
@@ -44,16 +44,16 @@ public class Build extends Configured implements Tool {
             ROWS_PROCESSED,
             ROWS_USED
         }
-        
+
         @Override
-        protected void map(ImmutableBytesWritable key, 
-                           Result row, 
-                           ExportMapper.Context context) 
+        protected void map(ImmutableBytesWritable key,
+                           Result row,
+                           ExportMapper.Context context)
         throws java.io.IOException, InterruptedException {
             context.getCounter(Counters.ROWS_PROCESSED).increment(1);
             byte[] documentID = row.getColumnLatest(CF_CONTENT, ID).getValue();
             KeyValue text = row.getColumnLatest(CF_CONTENT, TEXT);
-            context.write(new ImmutableBytesWritable(documentID), 
+            context.write(new ImmutableBytesWritable(documentID),
                           new Result(new KeyValue[]{text}));
         };
     }
@@ -71,7 +71,7 @@ public class Build extends Configured implements Tool {
     private Job createSubmittableJob(CollectionRef collection) throws IOException {
         final Configuration hadoopConf = this.getConf();
         new Util(conf_).saveConfToHadoopConf(hadoopConf);
-        
+
         final Factory factory = new Factory(conf_);
         final long start = new Date().getTime();
         final String jobName = "grouper_" + collection.namespace() + "_" + collection.key();
@@ -83,21 +83,22 @@ public class Build extends Configured implements Tool {
         job.setOutputKeyClass(ImmutableBytesWritable.class);
         job.setOutputValueClass(Result.class);
         FileOutputFormat.setOutputPath(job, new Path(outputDir));
-        
+
         // Set optional scan parameters
         Scan scan = new Scan();
         scan.setMaxVersions(1);
         scan.setFilter(new PrefixFilter(Bytes.toBytes(factory.keys().documentPrefix(collection))));
-        TableMapReduceUtil.initTableMapperJob(factory.tableName(T_DOCUMENTS), 
+        TableMapReduceUtil.initTableMapperJob(factory.tableName(T_DOCUMENTS),
                                               scan, ExportMapper.class, null, null, job);
         return job;
     }
-   
+
     private int usage(int status) {
         (status == 0 ? System.out : System.err).println(TOOL_USAGE);
         return status;
     }
 
+    @Override
     public int run(String[] args) throws Exception {
         if (args.length > 0 && "help".equals(args[0])) return usage(0);
         if (args.length != 2) return usage(1);
@@ -106,7 +107,7 @@ public class Build extends Configured implements Tool {
         return job.waitForCompletion(true) ? 0 : 1;
     }
 
-    
+
     public Build(Config conf, Configuration hadoopConf) {
         Assert.nonNull(conf, hadoopConf);
         this.setConf(hadoopConf);

@@ -70,15 +70,15 @@ public class Assert {
 
     public static void unreachable() {
         throw new IllegalStateException(String.format("%s Code should be unreachable!\n",
-                                                      prefix));        
+                                                      prefix));
     }
-         
+
     public static void unreachable(String message, Object... objects) {
-        throw new IllegalStateException(String.format("%s Code should be unreachable: %s\n", 
-                                                      prefix, 
+        throw new IllegalStateException(String.format("%s Code should be unreachable: %s\n",
+                                                      prefix,
                                                       String.format(message, objects)));
     }
-    
+
     /* Return this where java wants to have a return value of type T. Silly, really... */
     public static <T> T unreachable(Class<T> returnType) {
         throw new IllegalStateException(String.format("%s Code should be unreachable!\n",
@@ -87,14 +87,14 @@ public class Assert {
 
     /* Return this where java wants to have a return value of type T. Silly, really... */
     public static <T> T unreachable(Class<T> returnType, String message, Object... objects) {
-        throw new IllegalStateException(String.format("%s Code should be unreachable: %s\n", 
-                                                      prefix, 
+        throw new IllegalStateException(String.format("%s Code should be unreachable: %s\n",
+                                                      prefix,
                                                       String.format(message, objects)));
     }
 
     /* Return this where java wants to have a return value of type T. Silly, really... */
     public static <T> T unreachable(Class<T> returnType, Exception problem) {
-        throw new IllegalStateException(String.format("%s Code should be unreachable\n", prefix), 
+        throw new IllegalStateException(String.format("%s Code should be unreachable\n", prefix),
                                         problem);
     }
 

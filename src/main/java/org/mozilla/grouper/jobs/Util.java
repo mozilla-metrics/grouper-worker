@@ -15,9 +15,9 @@ import org.mozilla.grouper.base.Config;
  * This way configuration values are transmitted to map/reduce tasks.
  */
 public class Util {
-    
+
     private final Config conf_;
-    
+
     private static final String PREFIX = "grouperfish.";
     private static final String PREFIX_MATCHER = "^grouperfish.*";
 
@@ -42,7 +42,7 @@ public class Util {
     }
 
     /** Config is required to allow for config-based decisions in utils in the future. */
-    public Util(Config conf) { 
+    public Util(Config conf) {
         Assert.nonNull(conf);
         conf_ = conf;
     }
@@ -53,7 +53,7 @@ public class Util {
         Tool tool = null;
         if ("build".equals(toolName)) tool = new Build(conf_, hadoopConf);
         Assert.nonNull(tool);
-        
+
         String[] otherArgs;
         try {
             otherArgs = new GenericOptionsParser(hadoopConf, args).getRemainingArgs();

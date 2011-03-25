@@ -20,16 +20,16 @@ public class Factory {
             hbaseConf_.set("zookeeper.znode.parent", conf_.hbaseZkNode());
         }
     }
-    
+
     public org.apache.hadoop.conf.Configuration hbaseConfig() {
         return hbaseConf_;
     }
-    
+
     public HTableInterface table(String name) {
         return tableFactory_.createHTableInterface(hbaseConf_,
                                                    Bytes.toBytes(tableName(name)));
     }
-    
+
     public String tableName(String name) {
         return conf_.prefix() + name;
     }
@@ -37,13 +37,13 @@ public class Factory {
     public void release(HTableInterface table) {
         tableFactory_.releaseHTableInterface(table);
     }
-    
+
     /** Row keys that are (hopefully) in sync with those used by the REST service! */
     public Keys keys() {
         return new SimpleKeys();
     }
-    
+
     private final Config conf_;
-    private final org.apache.hadoop.conf.Configuration hbaseConf_;    
+    private final org.apache.hadoop.conf.Configuration hbaseConf_;
     private final HTableInterfaceFactory tableFactory_ = new HTableFactory();
 }

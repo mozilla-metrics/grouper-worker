@@ -1,21 +1,21 @@
 package org.mozilla.grouper.input;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.LinkedList;
+import java.util.List;
 
 public class TsvReader {
-    
+
     static private final Charset UTF8 = Charset.forName("UTF-8");
     static final String[] STRINGS = new String[]{};
 
     final BufferedReader reader;
 
-    
+
     static final int CHUNK = 32768;
     char[] buffer = new char[CHUNK];
     String[] row = null;
@@ -23,12 +23,12 @@ public class TsvReader {
     int pos = -1;
     int bytesRead = -1;
     final StringBuilder builder = new StringBuilder();
-    
+
 
     public TsvReader(final InputStream in) {
         reader = new BufferedReader(new InputStreamReader(in, UTF8), CHUNK * 32);
     }
-    
+
     /** TSV reading state machine. opencsv does not support our format (escape without quotes). */
     public String[] nextRow() throws IOException {
         final List<String> row = new LinkedList<String>();
@@ -42,7 +42,7 @@ public class TsvReader {
             c = buffer[pos++];
             if (!escaped) {
                 switch (c) {
-                    case '\\': 
+                    case '\\':
                         escaped = true;
                         continue;
                     case '\t':
