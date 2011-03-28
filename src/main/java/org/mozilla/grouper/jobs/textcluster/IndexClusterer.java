@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
  *   2. From reducer, emit partial cosine similarity: (doc, doc, term) -> (weight)
  *       --> Q: what to do when postings from the mappers become too large?
  *   3. Remap to the key (doc, doc) and value (score).
- *   4. Sum the now sorted partial scores, use the top score and emit entries where the lower id
- *      is to the left (so each entry is emitted only once). These are our cluster members.
- *       --> Q: Can we use the followers/splicing with that (not used all that often)?
+ *   4. Reduce: Sum the now sorted partial scores, use the top score and emit entries with lower
+ *      id to the left (so each entry is emitted only once). These are our cluster members.
+ *       --> Q: Can we use the followers/splicing with that (not activated all that often anyways)?
  */
 public class IndexClusterer {
 

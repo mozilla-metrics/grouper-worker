@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
+import org.mozilla.grouper.jobs.textcluster.TextClusterTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +62,7 @@ public class Util {
         availableTools_.put(ExportDocuments.NAME,    ExportDocuments.class);
         availableTools_.put(VectorizeDocuments.NAME, VectorizeDocuments.class);
         availableTools_.put(CreateClusters.NAME,     CreateClusters.class);
-        availableTools_.put(TextCluster.NAME,        TextCluster.class);
-        availableTools_.put(CanopyOptimizer.NAME,    CanopyOptimizer.class);
+        availableTools_.put(TextClusterTool.NAME,    TextClusterTool.class);
     }
 
     // TODO:

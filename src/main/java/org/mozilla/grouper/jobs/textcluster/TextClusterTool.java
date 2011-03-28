@@ -1,4 +1,4 @@
-package org.mozilla.grouper.jobs;
+package org.mozilla.grouper.jobs.textcluster;
 
 import java.util.List;
 import java.util.Map;
@@ -14,15 +14,16 @@ import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
-import org.mozilla.grouper.jobs.textcluster.Cluster;
-import org.mozilla.grouper.jobs.textcluster.IndexClusterer;
+import org.mozilla.grouper.jobs.AbstractCollectionTool;
+import org.mozilla.grouper.jobs.Histogram;
+import org.mozilla.grouper.jobs.VectorizeDocuments;
 import org.mozilla.grouper.model.CollectionRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TextCluster extends AbstractCollectionTool {
+public class TextClusterTool extends AbstractCollectionTool {
 
-    public TextCluster(Config conf, Configuration hadoopConf) {
+    public TextClusterTool(Config conf, Configuration hadoopConf) {
         super(conf, hadoopConf);
     }
 
