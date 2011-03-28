@@ -60,8 +60,7 @@ public class ExportDocuments extends AbstractCollectionTool {
         final Configuration hadoopConf = this.getConf();
         new Util(conf_).saveConfToHadoopConf(hadoopConf);
 
-        final Factory factory = new Factory(conf_);
-        final String outputDir = outputDir(collection, timestamp);
+        final Path outputDir = outputDir(collection, timestamp);
         final String jobName = jobName(collection, timestamp);
         final Job job = new Job(hadoopConf, jobName);
         job.setJarByClass(AbstractCollectionTool.class);
@@ -69,11 +68,12 @@ public class ExportDocuments extends AbstractCollectionTool {
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        FileOutputFormat.setOutputPath(job, new Path(outputDir));
+        FileOutputFormat.setOutputPath(job, outputDir);
 
         // Set optional scan parameters
         Scan scan = new Scan();
         scan.setMaxVersions(1);
+        final Factory factory = new Factory(conf_);
         scan.setFilter(new PrefixFilter(Bytes.toBytes(factory.keys().documentPrefix(collection))));
         TableMapReduceUtil.initTableMapperJob(factory.tableName(T_DOCUMENTS),
                                               scan, ExportMapper.class, null, null, job);

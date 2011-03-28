@@ -82,7 +82,7 @@ public abstract class AbstractCollectionTool extends Configured implements Tool 
         else if (args.length > 3) return usage(1);
         CollectionRef collection = new CollectionRef(args[0], args[1]);
 
-        final Path dest = new Path(outputDir(collection, timestamp));
+        final Path dest = outputDir(collection, timestamp);
         FileSystem fs = FileSystem.get(dest.toUri(), getConf());
         if (fs.exists(dest)) {
             // Should not happen in an actual installation, due to locking + timestamp.
@@ -94,11 +94,13 @@ public abstract class AbstractCollectionTool extends Configured implements Tool 
         return run(collection, timestamp);
     }
 
-    public String outputDir(CollectionRef collection, long timestamp) {
+    public Path outputDir(CollectionRef collection, long timestamp) {
         String nsMd5 = DigestUtils.md5Hex(Bytes.toBytes(collection.namespace())).substring(0, 6);
         String ckMd5 = DigestUtils.md5Hex(Bytes.toBytes(collection.key())).substring(0, 6);
         String ts = Long.toString(timestamp);
-        return new StringBuilder().append(conf_.dfsBase()).append('/').append(ts).append('/')
-               .append(nsMd5).append('_').append(ckMd5).append('/').append(name()).toString();
+        return new Path(new StringBuilder().append(conf_.dfsBase()).append('/')
+                                           .append(ts).append('/')
+                                           .append(nsMd5).append('_').append(ckMd5).append('/')
+                                           .append(name()).toString());
     }
 }

@@ -17,7 +17,7 @@ public class VectorizeDocuments extends AbstractCollectionTool {
 
     private static final Logger log = LoggerFactory.getLogger(VectorizeDocuments.class);
 
-    public static String NAME = "vectorize";
+    public static final String NAME = "vectorize";
 
     public VectorizeDocuments(Config conf, Configuration hadoopConf) {
         super(conf, hadoopConf);
@@ -30,8 +30,8 @@ public class VectorizeDocuments extends AbstractCollectionTool {
     protected int run(CollectionRef collection, long timestamp) throws Exception {
         final Configuration hadoopConf = getConf();
         AbstractCollectionTool source = new ExportDocuments(conf_, hadoopConf);
-        final Path inputDir = new Path(source.outputDir(collection, timestamp));
-        final Path outputDir = new Path(outputDir(collection, timestamp));
+        final Path inputDir = source.outputDir(collection, timestamp);
+        final Path outputDir = outputDir(collection, timestamp);
 
 
         // The API usage here is taken from the Mahout utility SparseVectorsFromSequenceFiles,
@@ -43,8 +43,8 @@ public class VectorizeDocuments extends AbstractCollectionTool {
                                       DocumentProcessor.TOKENIZED_DOCUMENT_OUTPUT_FOLDER);
         DocumentProcessor.tokenizeDocuments(inputDir, analyzerClass, tokenizedPath, hadoopConf);
 
-        int chunkSize = 100;
-        int minSupport = 2;
+        int chunkSize = 200;
+        int minSupport = 10;
         int maxNGramSize = 1;
         float minLLRValue = LLRReducer.DEFAULT_MIN_LLR;
         log.info("Minimum LLR value: {}", minLLRValue);
@@ -53,7 +53,7 @@ public class VectorizeDocuments extends AbstractCollectionTool {
         log.info("Number of reduce tasks: {}", reduceTasks);
 
         // TODO: not sure yet if we need this
-        boolean namedVectors = false;
+        boolean namedVectors = true;
         boolean sequentialAccessOutput = true;
 
         DictionaryVectorizer.createTermFrequencyVectors(tokenizedPath, outputDir, hadoopConf,
@@ -64,11 +64,11 @@ public class VectorizeDocuments extends AbstractCollectionTool {
         // totally arbitrary:
         float norm = 2.0f;
 
-        boolean logNormalize = false;
+        boolean logNormalize = true;
         // minimum number of documents a term appears in for it to be considered
-        int minDf = 1;
+        int minDf = 10;
         // max percentage of docs before term is considered a stopword
-        int maxDFPercent = 90;
+        int maxDFPercent = 95;
 
         // TODO: Can we do this and still have efficiently updateable clusters?
         //       ...do we need to update all vectors after adding a document?

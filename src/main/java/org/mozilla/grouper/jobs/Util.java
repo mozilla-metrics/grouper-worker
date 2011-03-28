@@ -6,9 +6,10 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.util.GenericOptionsParser;
-import org.apache.hadoop.util.Tool;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // import org.apache.mahout.driver.MahoutDriver;
 
@@ -17,6 +18,8 @@ import org.mozilla.grouper.base.Config;
  * This way configuration values are transmitted to map/reduce tasks.
  */
 public class Util {
+
+    private static final Logger log = LoggerFactory.getLogger(Util.class);
 
     private final Config conf_;
 
@@ -28,13 +31,13 @@ public class Util {
         Assert.nonNull(hadoopConf);
         Map<String, String> source = conf_.asMap();
         for (Map.Entry<String, String> entry : source.entrySet()) {
-            hadoopConf.set(PREFIX + entry.getKey(), entry.getValue());
+            save(hadoopConf, entry.getKey(), entry.getValue());
         }
         return hadoopConf;
     }
 
     /** Reads Grouperfish configuration from hadoop configuration. Use it in mapred tasks. */
-    Config fromHadoopConf(Configuration hadoopConfig) {
+    static Config fromHadoopConf(Configuration hadoopConfig) {
         Map<String, String> source = hadoopConfig.getValByRegex(PREFIX_MATCHER);
         Map<String, String> dest = new java.util.HashMap<String, String>();
         for (Map.Entry<String, String> entry : source.entrySet()) {
@@ -43,38 +46,59 @@ public class Util {
         return new Config(dest);
     }
 
+    static void save(Configuration hadoopConfig, String key, String value) {
+        hadoopConfig.set(PREFIX + key, value);
+    }
+
+    static String load(Configuration hadoopConfig, String key) {
+        return hadoopConfig.get(PREFIX + key);
+    }
+
     /** Config is required to allow for config-based decisions in utils in the future. */
     public Util(Config conf) {
         Assert.nonNull(conf);
         conf_ = conf;
+        availableTools_.put(ExportDocuments.NAME,    ExportDocuments.class);
+        availableTools_.put(VectorizeDocuments.NAME, VectorizeDocuments.class);
+        availableTools_.put(CreateClusters.NAME,     CreateClusters.class);
+        availableTools_.put(TextCluster.NAME,        TextCluster.class);
+        availableTools_.put(CanopyOptimizer.NAME,    CanopyOptimizer.class);
     }
+
+    // TODO:
+    // - Either use properties to register jobs like Mahout, or use spring...
+    private final Map<String, Class<? extends AbstractCollectionTool>> availableTools_ =
+        new java.util.HashMap<String, Class<? extends AbstractCollectionTool>>();
+
 
     /** @return the exit status of the job */
     public int run(String toolName, String[] args) {
         Configuration hadoopConf = HBaseConfiguration.create();
-        Tool tool = null;
-        if (ExportDocuments.NAME.equals(toolName)) {
-            tool = new ExportDocuments(conf_, hadoopConf);
+        AbstractCollectionTool tool;
+        try {
+            Class<? extends AbstractCollectionTool> toolType = availableTools_.get(toolName);
+            tool = toolType.getConstructor(Config.class, Configuration.class)
+                           .newInstance(new Object[]{conf_, hadoopConf});
         }
-        else if (VectorizeDocuments.NAME.equals(toolName)) {
-            tool = new VectorizeDocuments(conf_, hadoopConf);
+        catch (Exception e) {
+            log.error("Could not instantiate the requested tool: " + toolName, e);
+            return 1;
         }
         Assert.nonNull(tool);
 
+        // - Possibly merge the above with the Cli and handle hadoop config in the abstract tool.
         String[] otherArgs;
         try {
             otherArgs = new GenericOptionsParser(hadoopConf, args).getRemainingArgs();
         } catch (IOException e) {
-            System.err.format("Error parsing hadoop/hbase options for job: %s!\n", tool);
-            e.printStackTrace();
+            log.error("Error running job: " + toolName, e);
             return 1;
         }
         try {
             return tool.run(otherArgs);
         }
         catch (Exception e) {
-            System.err.format("Error running job: %s!\n", tool);
-            e.printStackTrace();
+            log.error("Error running job: " + toolName, e);
             return 1;
         }
     }
