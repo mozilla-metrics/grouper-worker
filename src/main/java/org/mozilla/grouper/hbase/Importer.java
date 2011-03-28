@@ -1,11 +1,5 @@
 package org.mozilla.grouper.hbase;
 
-import static org.mozilla.grouper.hbase.Schema.CF_CONTENT;
-import static org.mozilla.grouper.hbase.Schema.COLLECTION_KEY;
-import static org.mozilla.grouper.hbase.Schema.ID;
-import static org.mozilla.grouper.hbase.Schema.NAMESPACE;
-import static org.mozilla.grouper.hbase.Schema.TEXT;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +12,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.mozilla.grouper.model.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +19,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Parallel importer of stuff into Hbase.
  */
-public class Importer {
+public class Importer<T> {
 
     // Set on worker creation. Reused by insert-tasks.
     private final ThreadLocal<HTableInterface> table_ = new ThreadLocal<HTableInterface>();
@@ -35,16 +27,16 @@ public class Importer {
     private static final Logger LOG = LoggerFactory.getLogger(Importer.class);
     private static final int BATCH_SIZE = 1000;
 
+    private String tableName_;
     private final Factory factory_;
-    private final Keys keys_;
 
 
-    public Importer(final Factory factory) {
+    public Importer(final Factory factory, final String tableName) {
+        tableName_ = tableName;
         factory_ = factory;
-        keys_ = factory.keys();
     }
 
-    public void load(Iterable<Document> docs) {
+    public void load(Iterable<T> input) {
         // To ensure HTables are freed after the import is done.
         final List<HTableInterface> tables_ = new java.util.LinkedList<HTableInterface>();
 
@@ -53,7 +45,7 @@ public class Importer {
                 new ThreadFactory() {
                     @Override
                     public Thread newThread(Runnable r) {
-                        final HTableInterface workerTable = factory_.table("documents");
+                        final HTableInterface workerTable = factory_.table(tableName_);
                         tables_.add(workerTable);
                         return new Thread(r) {
                             @Override
@@ -75,16 +67,17 @@ public class Importer {
         );
 
         int i = 1; // != 0 so % does not hit right away
-        List<Document> batch = new ArrayList<Document>(BATCH_SIZE);
-        for (Document doc : docs) {
-            if (doc.text().length() == 0) continue;
-            batch.add(doc);
+        List<T> batch = new ArrayList<T>(BATCH_SIZE);
+        for (T item : input) {
+            // :TODO: predicate pushdown
+            // if (doc.text().length() == 0) continue;
+            batch.add(item);
             if (i % BATCH_SIZE == 0) {
                 pool.submit(new Insert(batch));
-                batch = new ArrayList<Document>(BATCH_SIZE);
+                batch = new ArrayList<T>(BATCH_SIZE);
             }
-            if (i % 1000 == 0) System.out.print(".");
-            if (i % 10000 == 0) System.out.printf("queued %s messages\n", i);
+            if (i %  2500 == 0) System.out.print(".");
+            if (i % 50000 == 0) System.out.printf("queued %s messages\n", i);
             ++i;
         }
         pool.submit(new Insert(batch));
@@ -110,29 +103,26 @@ public class Importer {
     }
 
 
-
     class Insert implements Runnable {
-        private final List<Document>  docs_;
-        Insert(final List<Document>  docs) { docs_ = docs; }
+        private final List<T> items_;
+        private final RowAdapter<T> adapter_;
+        Insert(final List<T> items) {
+            items_ = items;
+            adapter_ = Adapters.create(factory_, items.get(0));
+        }
         @Override
         public void run() {
-            List<Put> batch = new ArrayList<Put>(docs_.size());
-            for (Document doc : docs_) {
-                batch.add(new Put(Bytes.toBytes(keys_.key(doc)))
-                          .add(CF_CONTENT, NAMESPACE, Bytes.toBytes(doc.ref().ownerRef().namespace()))
-                          .add(CF_CONTENT, COLLECTION_KEY, Bytes.toBytes(doc.ref().ownerRef().key()))
-                          .add(CF_CONTENT, ID, Bytes.toBytes(doc.ref().id()))
-                          .add(CF_CONTENT, TEXT, Bytes.toBytes(doc.text())));
-            }
-            try {
-                table_.get().put(batch);
-            } catch (IOException e) {
-                String from = keys_.key(docs_.get(0));
-                String to = keys_.key(docs_.get(docs_.size() - 1));
+            List<Put> batch = new ArrayList<Put>(items_.size());
+            for (T item : items_) batch.add(adapter_.put(item));
+            try { table_.get().put(batch); }
+            catch (IOException e) {
+                String from = adapter_.key(items_.get(0));
+                String to = adapter_.key(items_.get(items_.size() - 1));
                 LOG.error(String.format("While inserting batch %s,%s", from, to));
                 LOG.error("IO Error in importer", e);
             }
         }
     }
+
 
 }

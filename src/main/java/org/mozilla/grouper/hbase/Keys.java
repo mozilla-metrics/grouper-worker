@@ -1,5 +1,7 @@
 package org.mozilla.grouper.hbase;
 
+import org.mozilla.grouper.model.Cluster;
+import org.mozilla.grouper.model.ClusterRef;
 import org.mozilla.grouper.model.CollectionRef;
 import org.mozilla.grouper.model.Document;
 import org.mozilla.grouper.model.DocumentRef;
@@ -34,6 +36,16 @@ public abstract class Keys {
     public final String key(CollectionRef ref) {
         return collection(ref.namespace(), ref.key());
     }
+
+    public final String key(ClusterRef ref) {
+        CollectionRef c = ref.ownerRef();
+        return cluster(c.namespace(), c.key(), ref.rebuildTs(), ref.ownerRef().key());
+    }
+
+    public final String key(Cluster cluster) {
+        return key(cluster.ref());
+    }
+
 
     public final String key(Document doc) {
         return key(doc.ref());

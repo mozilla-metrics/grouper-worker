@@ -1,5 +1,6 @@
 package org.mozilla.grouper.jobs.textcluster;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.jobs.AbstractCollectionTool;
 import org.mozilla.grouper.jobs.Histogram;
 import org.mozilla.grouper.jobs.VectorizeDocuments;
+import org.mozilla.grouper.model.BaseCluster;
 import org.mozilla.grouper.model.CollectionRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,17 +50,36 @@ public class TextClusterTool extends AbstractCollectionTool {
 
     protected int run(CollectionRef collection, long timestamp, boolean sequential)
     throws Exception {
-        if (!sequential) {
-            return super.run(collection, timestamp);
-        }
+        if (!sequential) return super.run(collection, timestamp);
 
         // In memory version.
-
+        // :TODO: Add mapper+reducer based on chunk/merge, maybe also on more thorough methods.
         final AbstractCollectionTool source = new VectorizeDocuments(conf_, getConf());
         final Path inputDir = source.outputDir(collection, timestamp);
         final Path p = new Path(inputDir, "tfidf-vectors/part-r-00000");
 
-        // Read vectors...
+        List<BaseCluster> stage1 = fromVectors(p);
+        List<BaseCluster> stage2 = merge(stage1);
+        logHistogram(stage2);
+
+        /*
+        List<Cluster> clusters = new java.util.ArrayList<Cluster>(stage2.size());
+        for (BaseCluster c : stage2) {
+            // :TODO: use LLR or something to make nice labels!
+            // Until then we use the document label of the cluster medoid (the id).
+            final ClusterRef ref =
+                new ClusterRef(collection, timestamp, ((NamedVector) c.medoid()).getName());
+            clusters.add(new Cluster(ref, c));
+        }
+        Importer<Cluster> importer = new Importer<Cluster>(new Factory(conf_), Schema.T_CLUSTERS);
+        importer.load(clusters);
+        */
+
+        return 0;
+    }
+
+    final List<BaseCluster> fromVectors(Path p) throws IOException {
+        final List<BaseCluster> result = new java.util.ArrayList<BaseCluster>();
         SequenceFile.Reader reader = null;
         try {
             reader = new SequenceFile.Reader(p.getFileSystem(getConf()), p, getConf());
@@ -71,12 +92,11 @@ public class TextClusterTool extends AbstractCollectionTool {
 
             if (!reader.next(key, vector)) {
                 log.warn("No input vectors found in ", p);
-                return 0;
+                return result;
             }
 
             final int cardinality = vector.get().size();
-            final List<Cluster> result = new java.util.ArrayList<Cluster>();
-            List<Cluster> more;
+            List<BaseCluster> more;
             IndexClusterer clusterer = new IndexClusterer(cardinality);
             log.info("Starting clustering...");
             {
@@ -100,45 +120,51 @@ public class TextClusterTool extends AbstractCollectionTool {
         finally {
             IOUtils.closeStream(reader);
         }
-        return 0;
+        return result;
     }
 
-    final List<Cluster> merge(List<Cluster> result) {
+
+    final List<BaseCluster> merge(List<BaseCluster> result) {
         log.info("Starting meta-clustering...");
         final int cardinality = result.get(0).medoid().size();
-        final Map<Vector, Cluster> sources = new java.util.HashMap<Vector, Cluster>(result.size());
+        final Map<Vector, BaseCluster> sources = new java.util.HashMap<Vector, BaseCluster>(result.size());
         final IndexClusterer merger = new IndexClusterer(cardinality);
-        final List<Cluster> metaClusters = new java.util.ArrayList<Cluster>();
-        List<Cluster> more;
-        for (Cluster c : result) {
+        final List<BaseCluster> metaClusters = new java.util.ArrayList<BaseCluster>();
+        List<BaseCluster> more;
+        for (BaseCluster c : result) {
             sources.put(c.medoid(), c);
             more = merger.add(c.medoid());
             if (more != null) metaClusters.addAll(more);
         }
         metaClusters.addAll(merger.clusters());
 
-        final Histogram histogram = new Histogram();
-        List<Cluster> flatClusters = new java.util.ArrayList<Cluster>();
-        for (final Cluster meta : metaClusters) {
+        List<BaseCluster> flatClusters = new java.util.ArrayList<BaseCluster>();
+        for (final BaseCluster meta : metaClusters) {
             final Vector medoid = meta.medoid();
             final List<Vector> related = new java.util.ArrayList<Vector>();
             final List<Double> similarities = new java.util.ArrayList<Double>();
             related.addAll(sources.get(medoid).related());
-            similarities.addAll(sources.get(medoid).similarity());
+            similarities.addAll(sources.get(medoid).similarities());
 
             int i = 0;
             for (final Vector substitue : meta.related()) {
                 related.add(substitue);
-                similarities.add(meta.similarity().get(i));
+                similarities.add(meta.similarities().get(i));
                 related.addAll(sources.get(substitue).related());
-                // :TODO: we should recompute these similarities to the new medoid.
-                similarities.addAll(sources.get(substitue).similarity());
+                // :TODO: we should recompute these similarities for the new medoid.
+                similarities.addAll(sources.get(substitue).similarities());
                 ++i;
             }
-            histogram.add(related.size(), related.size());
-            flatClusters.add(new Cluster(medoid, related, similarities));
+
+            flatClusters.add(new BaseCluster(medoid, related, similarities));
         }
         return flatClusters;
+    }
+
+    private void logHistogram(List<BaseCluster> clustering) {
+        final Histogram histogram = new Histogram();
+        for (BaseCluster c : clustering) histogram.add(c.size(), c.size());
+        log.info("Histogram: ", clustering);
     }
 
 }

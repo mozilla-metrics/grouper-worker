@@ -4,11 +4,13 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
+import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.hbase.Factory;
 import org.mozilla.grouper.hbase.Importer;
 import org.mozilla.grouper.input.Opinions;
 import org.mozilla.grouper.jobs.Util;
+import org.mozilla.grouper.model.Document;
 
 
 public class Cli {
@@ -80,27 +82,12 @@ public class Cli {
     private final Config conf_;
 
     public void collectionInfo(String namespace, String collectionKey) {
-        Factory f = new Factory(conf_);
-        f.table("documents");
-        // do something like this, for hbase....
-        /*
-        System.out.format("Bucket %s at %s\n", bucket, url);
-        final BucketResponse r = riak.streamBucket(bucket);
-        if (!r.isSuccess()) exit("Could not stream bucket!", 1);
-        final RiakClient fetchClient =  new RiakClient(url);
-        final RequestMeta meta = RequestMeta.readParams(1);
-        for (String key : r.getBucketInfo().getKeys()) {
-            final FetchResponse fetch = fetchClient.fetch(bucket, key, meta);
-            if (!fetch.isSuccess()) exit("Error receiving value for key " + key, 1);
-            System.out.format("%s: %s\n", key, fetch.getObject().getValue());
-            fetch.close();
-        }
-        r.close();
-        */
+        Assert.unreachable("Implementz me!");
     }
 
     public int load(String namespace, InputStream in) {
-        new Importer(new Factory(conf_)).load(new Opinions(namespace).byTypeByVersionByProduct(in));
+        Importer<Document> importer = new Factory(conf_).importer(Document.class);
+        importer.load(new Opinions(namespace).byTypeByVersionByProduct(in));
         return 0;
     }
 

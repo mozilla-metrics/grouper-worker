@@ -11,6 +11,7 @@ import java.util.Map;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.Vector.Element;
 import org.mozilla.grouper.jobs.Histogram;
+import org.mozilla.grouper.model.BaseCluster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,7 @@ public class IndexClusterer {
      * Returns <tt>null</tt> until BLOCK_SIZE vectors have been added.
      * Then, compute and return a clustering and reset the internal state.
      * */
-    public List<Cluster> add(Vector next) {
+    public List<BaseCluster> add(Vector next) {
         if (next.getNumNondefaultElements() < MIN_DOCUMENT_LENGTH) return null;
         ++n_;
         vectors_.add(next);
@@ -100,7 +101,7 @@ public class IndexClusterer {
         if (n_ < blockSize_) return null;
 
         createIndex();
-        List<Cluster> clusters = createClusters();
+        List<BaseCluster> clusters = createClusters();
         reset();
         return clusters;
     }
@@ -109,7 +110,7 @@ public class IndexClusterer {
      * Force calculation of the cluster, e.g. where the collection is smaller than the
      * chunk size.
      */
-    public List<Cluster> clusters() {
+    public List<BaseCluster> clusters() {
         createIndex();
         return createClusters();
     }
@@ -129,15 +130,7 @@ public class IndexClusterer {
                 final Element e = it.next();
                 final int term = e.index();
                 final double weight = e.get();
-                try {
-                    index_.get(term).put(doc, weight);
-                }
-                catch(NullPointerException npe) {
-                    log.info(String.format(
-                       "NPE in create index?! This should not happen. term=%d, doc=%d, weight=%f",
-                       term, doc, weight
-                    ));
-                }
+                index_.get(term).put(doc, weight);
             }
             ++doc;
         }
@@ -146,7 +139,7 @@ public class IndexClusterer {
                                dictSize_, System.currentTimeMillis() - ts));
     }
 
-    private List<Cluster> createClusters() {
+    private List<BaseCluster> createClusters() {
         final long ts1 = System.currentTimeMillis();
         log.info(String.format("1/3 Creating similarity relation for %d document vectors...", n_));
 
@@ -277,7 +270,7 @@ public class IndexClusterer {
 
         Histogram h = new Histogram();
 
-        List<Cluster> clusters = new java.util.ArrayList<Cluster>();
+        List<BaseCluster> clusters = new java.util.ArrayList<BaseCluster>();
         for (Integer docIdx : toUse) {
             final int idx = docIdx.intValue();
             if (followers[idx] == null) continue;
@@ -289,7 +282,7 @@ public class IndexClusterer {
             }
             for (int i=0; i < followersList.size(); ++i) h.add(followersList.size());
 
-            clusters.add(new Cluster(vectors_.get(idx), followersList, null));
+            clusters.add(new BaseCluster(vectors_.get(idx), followersList, similarityList));
         }
 
         log.info(String.format("Size distribution: %s", h));

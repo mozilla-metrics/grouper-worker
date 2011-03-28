@@ -1,10 +1,13 @@
 package org.mozilla.grouper.hbase;
 
+import java.util.Map;
+
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTableFactory;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.HTableInterfaceFactory;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
 
 
@@ -41,6 +44,13 @@ public class Factory {
     /** Row keys that are (hopefully) in sync with those used by the REST service! */
     public Keys keys() {
         return new SimpleKeys();
+    }
+
+    private static final Map<Class<?>, String> tableByType = new java.util.HashMap<Class<?>, String>();
+
+    public <T> Importer<T> importer(Class<T> model) {
+        Assert.check(tableByType.containsKey(model));
+        return new Importer<T>(this, tableByType.get(model));
     }
 
     private final Config conf_;

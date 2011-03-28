@@ -86,7 +86,7 @@ public class Util {
         }
         Assert.nonNull(tool);
 
-        // - Possibly merge the above with the Cli and handle hadoop config in the abstract tool.
+        // Possibly merge the above with the Cli and handle hadoop config in the abstract tool?
         String[] otherArgs;
         try {
             otherArgs = new GenericOptionsParser(hadoopConf, args).getRemainingArgs();
