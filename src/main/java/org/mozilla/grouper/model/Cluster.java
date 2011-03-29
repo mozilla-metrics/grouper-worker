@@ -7,6 +7,7 @@ import org.apache.mahout.math.Vector;
 
 
 public class Cluster extends BaseCluster {
+
     private final ClusterRef ref_;
     private final List<DocumentRef> contents_ = new java.util.ArrayList<DocumentRef>();
 
@@ -24,13 +25,15 @@ public class Cluster extends BaseCluster {
         return ref_;
     }
 
-    public List<DocumentRef> contents() {
-        if (contents_.isEmpty()) {
-            CollectionRef owner_ = ref_.ownerRef();
-            contents_.add(new DocumentRef(owner_, ((NamedVector) medoid()).getName()));
-            for (Vector v : related()) {
-                contents_.add(new DocumentRef(owner_, ((NamedVector) v).getName()));
-            }
+    public DocumentRef representativeDoc() {
+        return new DocumentRef(ref_.ownerRef(), ((NamedVector) medoid()).getName());
+    }
+
+    public List<DocumentRef> relatedDocs() {
+        if (!contents_.isEmpty()) return contents_;
+        final CollectionRef owner_ = ref_.ownerRef();
+        for (Vector v : related()) {
+            contents_.add(new DocumentRef(owner_, ((NamedVector) v).getName()));
         }
         return contents_;
     }

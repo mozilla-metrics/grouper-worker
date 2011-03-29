@@ -11,14 +11,19 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.mahout.math.NamedVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
+import org.mozilla.grouper.hbase.Factory;
+import org.mozilla.grouper.hbase.Importer;
 import org.mozilla.grouper.jobs.AbstractCollectionTool;
 import org.mozilla.grouper.jobs.Histogram;
 import org.mozilla.grouper.jobs.VectorizeDocuments;
 import org.mozilla.grouper.model.BaseCluster;
+import org.mozilla.grouper.model.Cluster;
+import org.mozilla.grouper.model.ClusterRef;
 import org.mozilla.grouper.model.CollectionRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +34,7 @@ public class TextClusterTool extends AbstractCollectionTool {
         super(conf, hadoopConf);
     }
 
-    private static final Logger log = LoggerFactory.getLogger(IndexClusterer.class);
+    private static final Logger log = LoggerFactory.getLogger(TextClusterTool.class);
     public static final String NAME = "textcluster";
 
     @Override
@@ -62,7 +67,6 @@ public class TextClusterTool extends AbstractCollectionTool {
         List<BaseCluster> stage2 = merge(stage1);
         logHistogram(stage2);
 
-        /*
         List<Cluster> clusters = new java.util.ArrayList<Cluster>(stage2.size());
         for (BaseCluster c : stage2) {
             // :TODO: use LLR or something to make nice labels!
@@ -71,9 +75,8 @@ public class TextClusterTool extends AbstractCollectionTool {
                 new ClusterRef(collection, timestamp, ((NamedVector) c.medoid()).getName());
             clusters.add(new Cluster(ref, c));
         }
-        Importer<Cluster> importer = new Importer<Cluster>(new Factory(conf_), Schema.T_CLUSTERS);
+        Importer<Cluster> importer = new Factory(conf_).importer(Cluster.class);
         importer.load(clusters);
-        */
 
         return 0;
     }
@@ -125,6 +128,7 @@ public class TextClusterTool extends AbstractCollectionTool {
 
 
     final List<BaseCluster> merge(List<BaseCluster> result) {
+        if (result.size() <= 1) return result;
         log.info("Starting meta-clustering...");
         final int cardinality = result.get(0).medoid().size();
         final Map<Vector, BaseCluster> sources = new java.util.HashMap<Vector, BaseCluster>(result.size());
@@ -164,7 +168,7 @@ public class TextClusterTool extends AbstractCollectionTool {
     private void logHistogram(List<BaseCluster> clustering) {
         final Histogram histogram = new Histogram();
         for (BaseCluster c : clustering) histogram.add(c.size(), c.size());
-        log.info("Histogram: ", clustering);
+        log.info("Histogram: {}", histogram);
     }
 
 }

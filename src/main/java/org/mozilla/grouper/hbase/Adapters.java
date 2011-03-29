@@ -16,15 +16,15 @@ import org.mozilla.grouper.model.DocumentRef;
 
 public class Adapters {
 
-
     @SuppressWarnings("unchecked")
     static public <S> RowAdapter<S> create(Factory factory, S model) {
         if (model == null) return new RowAdapter<S>() {
                 @Override public Put put(S item) { return Assert.unreachable(Put.class); }
                 @Override public String key(S item) { return Assert.unreachable(String.class); }
         };
-        if (model == Cluster.class) return (RowAdapter<S>) new ClusterAdapter(factory);
-        if (model == Document.class) return (RowAdapter<S>) new DocumentAdapter(factory);
+        if (model instanceof Cluster) return (RowAdapter<S>) new ClusterAdapter(factory);
+        if (model instanceof Collection) return (RowAdapter<S>) new CollectionAdapter(factory);
+        if (model instanceof Document) return (RowAdapter<S>) new DocumentAdapter(factory);
         return Assert.unreachable(RowAdapter.class);
     }
 
@@ -42,11 +42,15 @@ public class Adapters {
                 .add(CF_META, Schema.NAMESPACE, Bytes.toBytes(owner.namespace()))
                 .add(CF_META, Schema.COLLECTION_KEY, Bytes.toBytes(owner.key()))
                 .add(CF_META, Schema.LAST_REBUILD, Bytes.toBytes(cluster.ref().rebuildTs()))
-                .add(CF_META, Schema.LABEL, Bytes.toBytes(cluster.ref().label()));
+                .add(CF_META, Schema.LABEL, Bytes.toBytes(cluster.ref().label()))
+                .add(CF_DOCUMENTS,
+                     Bytes.toBytes(cluster.representativeDoc().id()),
+                     Bytes.toBytes(1.0));
 
             int i = 0;
-            for (DocumentRef doc : cluster.contents()) {
-                put.add(CF_DOCUMENTS, Bytes.toBytes(doc.id()),
+            for (DocumentRef doc : cluster.relatedDocs()) {
+                put.add(CF_DOCUMENTS,
+                        Bytes.toBytes(doc.id()),
                         Bytes.toBytes(cluster.similarities().get(i).toString()));
                 ++i;
             }

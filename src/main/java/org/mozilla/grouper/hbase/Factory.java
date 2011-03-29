@@ -9,6 +9,9 @@ import org.apache.hadoop.hbase.client.HTableInterfaceFactory;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
+import org.mozilla.grouper.model.Cluster;
+import org.mozilla.grouper.model.Collection;
+import org.mozilla.grouper.model.Document;
 
 
 public class Factory {
@@ -47,6 +50,11 @@ public class Factory {
     }
 
     private static final Map<Class<?>, String> tableByType = new java.util.HashMap<Class<?>, String>();
+    static {
+        tableByType.put(Cluster.class, Schema.T_CLUSTERS);
+        tableByType.put(Document.class, Schema.T_DOCUMENTS);
+        tableByType.put(Collection.class, Schema.T_COLLECTIONS);
+    }
 
     public <T> Importer<T> importer(Class<T> model) {
         Assert.check(tableByType.containsKey(model));
