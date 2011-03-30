@@ -16,7 +16,8 @@ public class SimpleKeys extends Keys {
     protected String cluster(String ns, String ck, long rebuildTS, String label) {
         String ts = Long.valueOf(rebuildTS).toString();
         int size = ns.length() + 1 + ck.length() + 1 + ts.length() + 1 + ts.length();
-        return new StringBuilder(size).append(ns).append('/')
+        return new StringBuilder(size).append("DEFAULT/")
+                                      .append(ns).append('/')
                                       .append(ck).append('/')
                                       .append(ts).append('/')
                                       .append(label).toString();

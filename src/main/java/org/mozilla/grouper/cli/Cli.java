@@ -8,9 +8,13 @@ import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.input.StreamImporter;
 import org.mozilla.grouper.jobs.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Cli {
+
+    public static final Logger log = LoggerFactory.getLogger(Cli.class);
 
     static private final String USAGE =
         "Usage: java -jar grouperfish.jar [--config PATH] \\\n" +
@@ -84,7 +88,11 @@ public class Cli {
     }
 
     public int load(String namespace, InputStream in) {
-        new StreamImporter(conf_, in, namespace, new String[] {"$TYPE-$PRODUCT-$VERSION"});
+        int[] counters =
+            new StreamImporter(conf_, namespace,
+                               "$TYPE-$PRODUCT-$VERSION", "$TYPE-$PRODUCT").load(in);
+
+        log.info("Counters: #discarded/#used/#docs/#collections: {}", Arrays.toString(counters));
         return 0;
     }
 

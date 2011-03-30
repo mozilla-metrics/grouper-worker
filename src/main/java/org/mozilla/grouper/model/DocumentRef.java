@@ -6,8 +6,8 @@ public class DocumentRef {
     public String id() { return id_; }
 
     public DocumentRef(CollectionRef ownerRef, String id) {
-       ownerRef_ = ownerRef;
-       id_ = id;
+        ownerRef_ = ownerRef;
+        id_ = id;
     }
 
     private final CollectionRef ownerRef_;

@@ -49,6 +49,7 @@ public class Opinions implements Iterable<String[]> {
                     if (row.length != Field.values().length) {
                         log.warn("L{} skipping record (wrong number of columns) {}\n",
                                  i, Arrays.toString(row));
+                        ++i;
                         next();
                         return hasNext();
                     }

@@ -2,9 +2,11 @@ package org.mozilla.grouper.input;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,40 +25,39 @@ public class StreamImporter {
 
     private static final Logger log = LoggerFactory.getLogger(StreamImporter.class);
 
-    private final Factory factory_;
-    private final InputStream in_;
     private final String namespace_;
     private final KeyGen[] keyGens_;
+    private final Factory factory_;
 
     public StreamImporter(final Config conf,
-                          final InputStream in,
                           final String namespace,
-                          final String[] keyPatterns) {
+                          final String... keyPatterns) {
         factory_ = new Factory(conf);
-        in_ = in;
         namespace_ = namespace;
         keyGens_ = new KeyGen[keyPatterns.length];
         for (int i = keyPatterns.length; i --> 0;) keyGens_[i] = new KeyGen(keyPatterns[i]);
-
     }
 
     static enum Counters { ROWS_USED, ROWS_DISCARDED, DOCS_CREATED, COLLECTIONS_CREATED };
 
-    public int[] load() {
+    public int[] load(final InputStream in) {
+        final Map<String, CollectionRef> collectionRefs = new HashMap<String, CollectionRef>();
+        final Map<String, Integer> sizes = new HashMap<String, Integer>();
 
-        final Map<String, CollectionRef> collectionRefs = new java.util.HashMap<String, CollectionRef>();
-        final Map<String, Integer> sizes = new java.util.HashMap<String, Integer>();
-        DocumentsGenerator gen = new DocumentsGenerator(collectionRefs, sizes);
+        DocumentsGenerator gen = new DocumentsGenerator(in, collectionRefs, sizes);
         factory_.importer(Document.class).load(gen);
+        log.info("All documents loaded.");
 
         int[] counters = gen.counters;
-
         List<Collection> collections = new java.util.ArrayList<Collection>();
         for (CollectionRef ref : collectionRefs.values()) {
+            counters[Counters.COLLECTIONS_CREATED.ordinal()]++;
             collections.add(new Collection(ref).set(Attribute.SIZE,
                                                     sizes.get(ref.key()).longValue()));
         }
+
         factory_.importer(Collection.class).load(collections);
+        log.info("All collections loaded.");
         return counters;
     }
 
@@ -67,46 +68,60 @@ public class StreamImporter {
      */
     class DocumentsGenerator implements Iterable<Document> {
         final int[] counters = new int[Counters.values().length];
+        final InputStream in_;
         final Map<String, CollectionRef> collectionRefs_;
         final Map<String, Integer> sizes_;
-        DocumentsGenerator(final Map<String, CollectionRef> collectionRefs,
+        DocumentsGenerator(final InputStream in,
+                           final Map<String, CollectionRef> collectionRefs,
                            final Map<String, Integer> sizes) {
-            this.collectionRefs_ = collectionRefs;
-            this.sizes_ = sizes;
+            in_ = in;
+            collectionRefs_ = collectionRefs;
+            sizes_ = sizes;
         }
+
         @Override
         public Iterator<Document> iterator() {
             return new Iterator<Document>() {
-                final Iterator<String[]> rows = new Opinions(in_).iterator();
-                int k = keyGens_.length;
-                String[] row = null;
+
+                final Iterator<String[]> it_ = new Opinions(in_).iterator();
+                String[] opinion_ = it_.hasNext() ? it_.next() : null;
+                int k_ = 0;
+
                 @Override
                 public Document next() {
-                    if (++k >= keyGens_.length) {
-                        do row = rows.next(); while (!isOk(row));
-                        k = 0;
-                    }
-                    String key;
-                    do key = keyGens_[k++].key(row); while (k < keyGens_.length && key == null);
-                    if (key == null) {
-                        log.warn("Could not associate opinion {} to any collection!", row);
-                        return next();
-                    }
+                    if (!hasNext()) throw new NoSuchElementException();
+                    final String key = keyGens_[k_].key(opinion_);
 
-                    if (!collectionRefs_.containsKey(key))
+                    Integer size = sizes_.get(key);
+                    if (size == null) {
                         collectionRefs_.put(key, new CollectionRef(namespace_, key));
-                    sizes_.put(key, sizes_.get(key)+1);
-                    DocumentRef ref = new DocumentRef(collectionRefs_.get(key),
-                                                      row[Field.ID.i]);
-                    return new Document(ref, row[Field.TEXT.i]);
+                        size = Integer.valueOf(0);
+                    }
+                    sizes_.put(key, Integer.valueOf(size.intValue()+1));
+
+                    final DocumentRef ref =
+                        new DocumentRef(collectionRefs_.get(key), opinion_[Field.ID.i]);
+                    final Document doc = new Document(ref, opinion_[Field.TEXT.i]);
+                    counters[Counters.DOCS_CREATED.ordinal()]++;
+
+                    k_ = (k_+1) % keyGens_.length;
+                    if (k_ == 0) opinion_ = null;
+                    return doc;
                 }
+
                 @Override
-                public boolean hasNext() { return rows.hasNext(); }
+                public boolean hasNext() {
+                    if (opinion_ != null) return true;
+                    if (!it_.hasNext()) return false;
+                    do opinion_ = it_.next(); while (it_.hasNext() && !isOk(opinion_));
+                    return opinion_ != null;
+                }
+
                 @Override
                 public void remove() { throw new UnsupportedOperationException(); }
 
-                private boolean isOk(String[] row) {
-                    if (row[Field.TEXT.i].length() == 0) {
+                private boolean isOk(String[] opinion) {
+                    if (opinion == null || opinion[Field.TEXT.i].length() == 0) {
                         counters[Counters.ROWS_DISCARDED.ordinal()]++;
                         return false;
                     }
@@ -122,18 +137,17 @@ public class StreamImporter {
      * variables. Examples:
      * Note that there is no escape syntax.
      * "$PRODUCT:$VERSION-$PLATFORM-$TYPE" will produce keys such as "firefox:4.0b12-mac-issue".
-     * If an opinion does not contain the required information for all flags, make will return
-     * null for this pattern.
      */
     private static class KeyGen {
-        //private static final Logger log = LoggerFactory.getLogger(KeyGen.class);
+
         final String[] fragments_;
         final Field[] fields_;
 
         KeyGen (String pattern) {
-            List<String> fragments = new ArrayList<String>(); // Contains a null where a field should be used.
-            List<Field> fields = new ArrayList<Opinions.Field>(); // Contains each field to be used.
-            Matcher matcher = Pattern.compile("^[^$]*[$]([a-zA-Z0-9]+)[^$]*").matcher(pattern);
+            // Contains a null where a fragment should be inserted.
+            List<Field> fields = new ArrayList<Opinions.Field>();
+            List<String> fragments = new ArrayList<String>();
+            Matcher matcher = Pattern.compile("[$]([a-zA-Z0-9]+)").matcher(pattern);
             while (matcher.find()) {
                 StringBuffer tmp = new StringBuffer();
                 matcher.appendReplacement(tmp, "");
@@ -141,18 +155,18 @@ public class StreamImporter {
                     fields.add(null);
                     fragments.add(tmp.toString());
                 }
-                fields.add(Field.valueOf(matcher.group()));
+                fields.add(Field.valueOf(matcher.group().substring(1)));
             }
             fragments_ = fragments.toArray(new String[fragments.size()]);
             fields_ = fields.toArray(new Field[fields.size()]);
         }
 
-        String key(String[] opinion) {
-            StringBuilder sb = new StringBuilder();
+        String key(final String[] opinion) {
+            final StringBuilder sb = new StringBuilder(24);
             int frag = 0;
             for (Field field : fields_) {
                 if (field == null) sb.append(fragments_[frag++]);
-                else sb.append(field);
+                else sb.append(opinion[field.ordinal()]);
             }
             return sb.toString();
         }

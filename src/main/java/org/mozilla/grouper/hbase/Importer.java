@@ -22,13 +22,14 @@ import org.slf4j.LoggerFactory;
  */
 public class Importer<T> {
 
-    // Set on worker creation. Reused by insert-tasks.
-    private final ThreadLocal<HTableInterface> table_ = new ThreadLocal<HTableInterface>();
-
     private static final Logger log = LoggerFactory.getLogger(Importer.class);
+
     private static final int BATCH_SIZE = 1000;
 
-    private String tableName_;
+    // Filled on worker creation so tables can be reused by insert-tasks and cleaned up later.
+    private final ThreadLocal<HTableInterface> table_ = new ThreadLocal<HTableInterface>();
+
+    private final String tableName_;
     private final Factory factory_;
 
     // The pool adds references here, helping to free tables later on.
@@ -54,7 +55,7 @@ public class Importer<T> {
                 workers.submit(new Insert(batch));
                 batch = new ArrayList<T>(BATCH_SIZE);
             }
-            if (i % 50000 == 0) log.debug("Queued {} messages for table {}", i, tableName_);
+            if (i % 50000 == 0) log.info("Queued {} messages for table {}", i, tableName_);
             ++i;
         }
         log.info(String.format("Inserting batch of size %d", batch.size()));
@@ -63,6 +64,11 @@ public class Importer<T> {
 
         // now the tables of all threads are safe to discard:
         for (HTableInterface t: tables_) factory_.release(t);
+    }
+
+    public void load(T item) throws IOException {
+        Put put = Adapters.create(factory_, item).put(item);
+        factory_.table(tableName_).put(put);
     }
 
     class Insert implements Runnable {
@@ -77,7 +83,6 @@ public class Importer<T> {
             if (items_.size() == 0) return;
             List<Put> batch = new ArrayList<Put>(items_.size());
             for (T item : items_) {
-                Adapters.create(factory_, item).put(item);
                 batch.add(adapter_.put(item));
             }
             try {
@@ -138,7 +143,7 @@ public class Importer<T> {
             if (pool.awaitTermination(120, TimeUnit.SECONDS)) return;
             pool.shutdownNow();
             if (pool.awaitTermination(60, TimeUnit.SECONDS)) return;
-            System.err.println("Importer pool did not terminate within timeout.");
+            log.error("Importer pool did not terminate within timeout.");
             System.exit(1);
         }
         catch (InterruptedException e) {

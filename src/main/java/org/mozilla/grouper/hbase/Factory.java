@@ -46,7 +46,7 @@ public class Factory {
 
     /** Row keys that are (hopefully) in sync with those used by the REST service! */
     public Keys keys() {
-        return new SimpleKeys();
+        return new ReversePartsKeys();
     }
 
     private static final Map<Class<?>, String> tableByType = new java.util.HashMap<Class<?>, String>();

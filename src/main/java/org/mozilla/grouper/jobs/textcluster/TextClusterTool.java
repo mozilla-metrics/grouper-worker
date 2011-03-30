@@ -24,6 +24,8 @@ import org.mozilla.grouper.jobs.VectorizeDocuments;
 import org.mozilla.grouper.model.BaseCluster;
 import org.mozilla.grouper.model.Cluster;
 import org.mozilla.grouper.model.ClusterRef;
+import org.mozilla.grouper.model.Collection;
+import org.mozilla.grouper.model.Collection.Attribute;
 import org.mozilla.grouper.model.CollectionRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +79,10 @@ public class TextClusterTool extends AbstractCollectionTool {
         }
         Importer<Cluster> importer = new Factory(conf_).importer(Cluster.class);
         importer.load(clusters);
+
+        // Rebuild complete: Activate changes in collection meta...
+        Importer<Collection> collectionImporter = new Factory(conf_).importer(Collection.class);
+        collectionImporter.load(new Collection(collection).set(Attribute.REBUILT, timestamp));
 
         return 0;
     }
