@@ -11,22 +11,16 @@ import java.util.List;
 public class TsvReader {
 
     static private final Charset UTF8 = Charset.forName("UTF-8");
-    static final String[] STRINGS = new String[]{};
 
-    final BufferedReader reader;
+    private final BufferedReader reader;
 
+    private boolean escaped = false;
 
-    static final int CHUNK = 32768;
-    char[] buffer = new char[CHUNK];
-    String[] row = null;
-    boolean escaped = false;
-    int pos = -1;
-    int bytesRead = -1;
-    final StringBuilder builder = new StringBuilder();
+    private final StringBuilder builder = new StringBuilder();
 
 
     public TsvReader(final InputStream in) {
-        reader = new BufferedReader(new InputStreamReader(in, UTF8), CHUNK * 32);
+        reader = new BufferedReader(new InputStreamReader(in, UTF8), 32768 * 32);
     }
 
     /** TSV reading state machine. opencsv does not support our format (escape without quotes). */
@@ -34,12 +28,9 @@ public class TsvReader {
         final List<String> row = new LinkedList<String>();
         char c;
         while (true) {
-            if (pos == bytesRead) {
-                bytesRead = reader.read(buffer, 0, CHUNK);
-                if (bytesRead == -1) return null;
-                pos = 0;
-            }
-            c = buffer[pos++];
+            int i = reader.read();
+            if (i == -1) return null;
+            c = (char) i;
             if (!escaped) {
                 switch (c) {
                     case '\\':
@@ -52,7 +43,7 @@ public class TsvReader {
                     case '\n':
                         row.add(builder.toString());
                         builder.setLength(0);
-                        return row.toArray(STRINGS);
+                        return row.toArray(new String[row.size()]);
                 }
             }
             builder.append(c);
