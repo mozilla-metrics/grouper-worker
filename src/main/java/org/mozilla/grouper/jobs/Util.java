@@ -61,7 +61,6 @@ public class Util {
         conf_ = conf;
         availableTools_.put(ExportDocuments.NAME,    ExportDocuments.class);
         availableTools_.put(VectorizeDocuments.NAME, VectorizeDocuments.class);
-        availableTools_.put(CreateClusters.NAME,     CreateClusters.class);
         availableTools_.put(TextClusterTool.NAME,    TextClusterTool.class);
     }
 
