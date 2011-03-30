@@ -49,7 +49,6 @@ public class Importer<T> {
         List<T> batch = new ArrayList<T>(BATCH_SIZE);
         for (T item : input) {
             // :TODO: predicate pushdown
-            // if (doc.text().length() == 0) continue;
             batch.add(item);
             if (i % BATCH_SIZE == 0) {
                 workers.submit(new Insert(batch));
@@ -77,7 +76,6 @@ public class Importer<T> {
         public void run() {
             if (items_.size() == 0) return;
             List<Put> batch = new ArrayList<Put>(items_.size());
-            // adapter_ = Adapters.create(factory_, items_.get(0));
             for (T item : items_) {
                 Adapters.create(factory_, item).put(item);
                 batch.add(adapter_.put(item));

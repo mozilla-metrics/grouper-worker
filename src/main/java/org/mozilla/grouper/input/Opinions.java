@@ -5,12 +5,13 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.mozilla.grouper.model.CollectionRef;
-import org.mozilla.grouper.model.Document;
-import org.mozilla.grouper.model.DocumentRef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public class Opinions {
+public class Opinions implements Iterable<String[]> {
+
+    private static final Logger log = LoggerFactory.getLogger(Opinions.class);
 
     static enum Field {
         ID(0), TIMESTAMP(1), TYPE(2), PRODUCT(3), VERSION(4), PLATFORM(5), LOCALE(6),
@@ -19,46 +20,14 @@ public class Opinions {
         Field(int c) { i = c; }
     }
 
-    public Opinions(String namespace) {
-        namespace_ = namespace;
-    }
+    private final InputStream in_;
 
-    public Iterable<Document> byTypeByVersionByProduct(final InputStream in) {
-        return new BaseIterable(in) {
-            @Override
-            CollectionRef collectionRef(String[] row) {
-                String key = String.format("%s,%s,%s", row[Field.PRODUCT.i], row[Field.VERSION.i], row[Field.TYPE.i]);
-                return new CollectionRef(namespace_, key);
-            }
-        };
-    }
+    public Opinions(final InputStream in) { in_ = in; }
 
-    private abstract class BaseIterable implements Iterable<Document> {
-        abstract CollectionRef collectionRef(String[] row);
-        BaseIterable(InputStream in) { rows_ = rows(in); }
-        @Override
-        public Iterator<Document> iterator() {
-            return new Iterator<Document>() {
-                @Override
-                public Document next() {
-                    final String[] row = rows_.next();
-                    return new Document(new DocumentRef(collectionRef(row), row[Field.ID.i]),
-                                        row[Field.TEXT.i]);
-                }
-                @Override
-                public boolean hasNext() { return rows_.hasNext(); }
-                @Override
-                public void remove() { throw new UnsupportedOperationException(); }
-            };
-        }
-        private final Iterator<String[]> rows_;
-    }
+    @Override
+    public Iterator<String[]> iterator() {
 
-    private final String namespace_;
-
-    private Iterator<String[]> rows(final InputStream in) {
-
-        final TsvReader tsv = new TsvReader(in);
+        final TsvReader tsv = new TsvReader(in_);
 
         return new Iterator<String[]>() {
 
@@ -78,10 +47,12 @@ public class Opinions {
                     row = tsv.nextRow();
                     if (row == null) return false;
                     if (row.length != Field.values().length) {
-                        System.err.format("L%s weird record: %s\n", ++i, Arrays.toString(row));
+                        log.warn("L{} skipping record (wrong number of columns) {}\n",
+                                 i, Arrays.toString(row));
                         next();
                         return hasNext();
                     }
+                    ++i;
                 }
                 catch (IOException e) {
                     e.printStackTrace();
@@ -96,4 +67,5 @@ public class Opinions {
             }
         };
     }
+
 }

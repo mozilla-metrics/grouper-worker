@@ -6,11 +6,8 @@ import java.util.List;
 
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.base.Config;
-import org.mozilla.grouper.hbase.Factory;
-import org.mozilla.grouper.hbase.Importer;
-import org.mozilla.grouper.input.Opinions;
+import org.mozilla.grouper.input.StreamImporter;
 import org.mozilla.grouper.jobs.Util;
-import org.mozilla.grouper.model.Document;
 
 
 public class Cli {
@@ -81,13 +78,13 @@ public class Cli {
 
     private final Config conf_;
 
+
     public void collectionInfo(String namespace, String collectionKey) {
         Assert.unreachable("Implementz me!");
     }
 
     public int load(String namespace, InputStream in) {
-        Importer<Document> importer = new Factory(conf_).importer(Document.class);
-        importer.load(new Opinions(namespace).byTypeByVersionByProduct(in));
+        new StreamImporter(conf_, in, namespace, new String[] {"$TYPE-$PRODUCT-$VERSION"});
         return 0;
     }
 

@@ -14,7 +14,7 @@ import org.mozilla.grouper.model.CollectionRef;
 import org.mozilla.grouper.model.Document;
 import org.mozilla.grouper.model.DocumentRef;
 
-public class Adapters {
+class Adapters {
 
     @SuppressWarnings("unchecked")
     static public <S> RowAdapter<S> create(Factory factory, S model) {
@@ -73,6 +73,7 @@ public class Adapters {
 
         @Override
         public Put put(Document doc) {
+            if (doc.text().length() == 0) return null;
             CollectionRef owner = doc.ref().ownerRef();
             return
                 new Put(Bytes.toBytes(key(doc)))
@@ -101,6 +102,8 @@ public class Adapters {
             Put put = new Put(Bytes.toBytes(key(collection)))
                       .add(CF_META, Schema.NAMESPACE, Bytes.toBytes(ref.namespace()))
                       .add(CF_META, Schema.COLLECTION_KEY, Bytes.toBytes(ref.key()));
+
+            // Only attributes that were specified by the caller are stored.
             for (Attribute a : Collection.Attribute.values()) {
                 if (collection.get(a) == null) continue;
                 switch (a) {
@@ -116,8 +119,9 @@ public class Adapters {
                         put.add(CF_META, Schema.SIZE, Bytes.toBytes(collection.get(a).toString()));
                     break;
                     case MODIFIED:
+                    case PROCESSED:
+                        // :TODO: handle these attributes
                     default:
-                        // :TODO: handle the other attributes
                         Assert.unreachable("not implemented");
                 }
             }
