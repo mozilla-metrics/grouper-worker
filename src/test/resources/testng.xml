@@ -6,7 +6,6 @@
 	    <groups>
             <run>
                 <include name="unit" />
-                <include name="riak-available" />
              </run>
         </groups>
 		<packages>

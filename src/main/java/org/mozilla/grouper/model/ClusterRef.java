@@ -1,7 +1,11 @@
 package org.mozilla.grouper.model;
 
-public class ClusterRef {
+public class ClusterRef implements Ref<Cluster> {
 
+    @Override
+    public Class<Cluster> model() { return Cluster.class; }
+
+    /** A handle to the collection that was clustered. */
     public CollectionRef ownerRef() { return ownerRef_; }
 
     /** The cluster label, a part of the row key. */

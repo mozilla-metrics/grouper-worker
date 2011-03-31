@@ -5,7 +5,9 @@ import java.util.List;
 import org.apache.mahout.math.Vector;
 
 
+/** A stripped down representation of a cluster, with no notion of references and collections. */
 public class BaseCluster {
+
     public Vector medoid() { return medoid_; }
     public int size() { return related_.size(); }
     public final List<Vector> related() { return related_; };

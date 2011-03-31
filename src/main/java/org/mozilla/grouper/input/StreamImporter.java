@@ -21,6 +21,11 @@ import org.mozilla.grouper.model.DocumentRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ * Loads opinions from a stream into all applicable collections.
+ * Also creates these collections.
+ */
 public class StreamImporter {
 
     private static final Logger log = LoggerFactory.getLogger(StreamImporter.class);

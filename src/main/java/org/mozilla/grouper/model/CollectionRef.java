@@ -1,11 +1,16 @@
 package org.mozilla.grouper.model;
 
-public class CollectionRef {
 
+public class CollectionRef implements Ref<Collection> {
+
+    /** Namespace for the key. */
     public String namespace() { return namespace_; }
 
     /** The collection-key (a <em>part</em> of rowkeys). */
     public String key() { return key_; }
+
+    @Override
+    public Class<Collection> model() { return Collection.class; }
 
     public CollectionRef(String namespace, String key) {
         namespace_ = namespace;
@@ -14,5 +19,6 @@ public class CollectionRef {
 
     private final String key_;
     private final String namespace_;
+
 
 }

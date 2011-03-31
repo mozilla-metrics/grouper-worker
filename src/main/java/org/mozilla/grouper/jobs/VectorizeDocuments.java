@@ -13,6 +13,11 @@ import org.mozilla.grouper.model.CollectionRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ * The API usage here is taken from the Mahout utility SparseVectorsFromSequenceFiles,
+ * which serves a very similar purpose (but as a command line utility).
+ */
 public class VectorizeDocuments extends AbstractCollectionTool {
 
     private static final Logger log = LoggerFactory.getLogger(VectorizeDocuments.class);
@@ -33,11 +38,6 @@ public class VectorizeDocuments extends AbstractCollectionTool {
         final Path inputDir = source.outputDir(collection, timestamp);
         final Path outputDir = outputDir(collection, timestamp);
 
-
-        // The API usage here is taken from the Mahout utility SparseVectorsFromSequenceFiles,
-        // which serves a very similar purpose (but as a command line utility).
-        // :TODO: Set them from the per-collection configuration.
-
         Class<? extends Analyzer> analyzerClass = DefaultAnalyzer.class;
         Path tokenizedPath = new Path(outputDir,
                                       DocumentProcessor.TOKENIZED_DOCUMENT_OUTPUT_FOLDER);
@@ -52,7 +52,6 @@ public class VectorizeDocuments extends AbstractCollectionTool {
         int reduceTasks = 1;
         log.info("Number of reduce tasks: {}", reduceTasks);
 
-        // TODO: not sure yet if we need this
         boolean namedVectors = true;
         boolean sequentialAccessOutput = true;
 
@@ -61,12 +60,13 @@ public class VectorizeDocuments extends AbstractCollectionTool {
                                                         -1.0f, false, reduceTasks, chunkSize,
                                                         sequentialAccessOutput, namedVectors);
 
-        // totally arbitrary:
+        // Euclidian, matches the similarity model we use with the inverted index later on.
         float norm = 2.0f;
 
         boolean logNormalize = true;
         // minimum number of documents a term appears in for it to be considered
         int minDf = 10;
+
         // max percentage of docs before term is considered a stopword
         int maxDFPercent = 95;
 

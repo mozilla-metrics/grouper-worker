@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
+import org.mozilla.grouper.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Parallel importer of stuff into Hbase.
  */
-public class Importer<T> {
+public class Importer<T extends Model> {
 
     private static final Logger log = LoggerFactory.getLogger(Importer.class);
 
@@ -29,16 +30,18 @@ public class Importer<T> {
     // Filled on worker creation so tables can be reused by insert-tasks and cleaned up later.
     private final ThreadLocal<HTableInterface> table_ = new ThreadLocal<HTableInterface>();
 
-    private final String tableName_;
     private final Factory factory_;
+    private final Class<T> model_;
+    private final String tableName_;
 
     // The pool adds references here, helping to free tables later on.
     final List<HTableInterface> tables_ = new java.util.LinkedList<HTableInterface>();
 
 
-    public Importer(final Factory factory, final String tableName) {
-        tableName_ = tableName;
+    public Importer(final Factory factory, final Class<T> model) {
+        model_ = model;
         factory_ = factory;
+        tableName_ = factory.tableName(model);
     }
 
     public void load(Iterable<T> input) {
@@ -49,7 +52,6 @@ public class Importer<T> {
         int i = 1; // != 0 so % does not hit right away
         List<T> batch = new ArrayList<T>(BATCH_SIZE);
         for (T item : input) {
-            // :TODO: predicate pushdown
             batch.add(item);
             if (i % BATCH_SIZE == 0) {
                 workers.submit(new Insert(batch));
@@ -68,7 +70,7 @@ public class Importer<T> {
 
     public void load(T item) throws IOException {
         Put put = Adapters.create(factory_, item).put(item);
-        factory_.table(tableName_).put(put);
+        factory_.table(model_).put(put);
     }
 
     class Insert implements Runnable {
@@ -108,7 +110,7 @@ public class Importer<T> {
            new ThreadFactory() {
                @Override
                public Thread newThread(final Runnable r) {
-                   final HTableInterface workerTable = factory_.table(tableName_);
+                   final HTableInterface workerTable = factory_.table(model_);
                    tables_.add(workerTable);
                    Thread worker = new Thread(r) {
                        @Override

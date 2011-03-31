@@ -7,9 +7,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 public class Schema {
 
     // Table Suffixes
-    public static final String T_DOCUMENTS = "documents";
-    public static final String T_COLLECTIONS = "collections";
-    public static final String T_CLUSTERS = "clusters";
+    static final String T_DOCUMENTS = "documents";
+    static final String T_COLLECTIONS = "collections";
+    static final String T_CLUSTERS = "clusters";
 
     // Column Families
     public static final byte[] CF_CONTENT = Bytes.toBytes("content");

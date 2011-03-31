@@ -1,10 +1,5 @@
 package org.mozilla.grouper.jobs;
 
-import static org.mozilla.grouper.hbase.Schema.CF_CONTENT;
-import static org.mozilla.grouper.hbase.Schema.ID;
-import static org.mozilla.grouper.hbase.Schema.TEXT;
-import static org.mozilla.grouper.hbase.Schema.T_DOCUMENTS;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
@@ -21,7 +16,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.hbase.Factory;
+import org.mozilla.grouper.hbase.Schema;
 import org.mozilla.grouper.model.CollectionRef;
+import org.mozilla.grouper.model.Document;
 
 /**
  * Export all documents into a directory, one file per map-task.
@@ -47,8 +44,8 @@ public class ExportDocuments extends AbstractCollectionTool {
                            ExportMapper.Context context)
         throws java.io.IOException, InterruptedException {
             context.getCounter(Counters.ROWS_USED).increment(1);
-            byte[] documentID = row.getColumnLatest(CF_CONTENT, ID).getValue();
-            KeyValue text = row.getColumnLatest(CF_CONTENT, TEXT);
+            byte[] documentID = row.getColumnLatest(Schema.CF_CONTENT, Schema.ID).getValue();
+            KeyValue text = row.getColumnLatest(Schema.CF_CONTENT, Schema.TEXT);
             context.write(new Text(documentID), new Text(text.getValue()));
         };
     }
@@ -75,7 +72,7 @@ public class ExportDocuments extends AbstractCollectionTool {
         scan.setMaxVersions(1);
         final Factory factory = new Factory(conf_);
         scan.setFilter(new PrefixFilter(Bytes.toBytes(factory.keys().documentPrefix(collection))));
-        TableMapReduceUtil.initTableMapperJob(factory.tableName(T_DOCUMENTS),
+        TableMapReduceUtil.initTableMapperJob(factory.tableName(Document.class),
                                               scan, ExportMapper.class, null, null, job);
         return job;
     }

@@ -1,7 +1,7 @@
 package org.mozilla.grouper.hbase;
 
 
-public class ReversePartsKeys extends Keys {
+class ReversePartsKeys extends Keys {
 
     private StringBuilder revAppend(StringBuilder sb, String part) {
         for (int i = part.length(); i --> 0; ) sb.append(part.charAt(i));

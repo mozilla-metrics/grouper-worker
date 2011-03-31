@@ -12,7 +12,6 @@ import org.mozilla.grouper.jobs.textcluster.TextClusterTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// import org.apache.mahout.driver.MahoutDriver;
 
 /**
  * Stores and reads Grouperfish configuration to/from hadoop config.
@@ -64,8 +63,7 @@ public class Util {
         availableTools_.put(TextClusterTool.NAME,    TextClusterTool.class);
     }
 
-    // TODO:
-    // - Either use properties to register jobs like Mahout, or use spring...
+
     private final Map<String, Class<? extends AbstractCollectionTool>> availableTools_ =
         new java.util.HashMap<String, Class<? extends AbstractCollectionTool>>();
 

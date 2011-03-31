@@ -1,12 +1,13 @@
 package org.mozilla.grouper.model;
 
-public class Document {
+public class Document implements Model {
 
     public Document(DocumentRef ref, String text) {
         ref_ = ref;
         text_ = text;
     }
 
+    @Override
     public DocumentRef ref() { return ref_; }
     public String text() { return text_; }
 

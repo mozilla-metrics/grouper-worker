@@ -11,10 +11,9 @@ import java.util.Map;
  * When put to the db, only the given columns will be overwritten. Set an attributes to
  * <tt>null</tt> to prevent it from being written to the database.
  */
-public class Collection {
+public class Collection implements Model {
 
-    private Map<Attribute, Long> attributes_;
-
+    @Override
     public CollectionRef ref() { return ref_; }
 
     public Long get(Attribute attr) { return attributes_.get(attr); }
@@ -37,6 +36,8 @@ public class Collection {
         ref_ = ref;
         attributes_ = new java.util.HashMap<Attribute, Long>();
     }
+
+    private final Map<Attribute, Long> attributes_;
 
     private final CollectionRef ref_;
 

@@ -1,5 +1,6 @@
 package org.mozilla.grouper.hbase;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -12,9 +13,20 @@ import org.mozilla.grouper.base.Config;
 import org.mozilla.grouper.model.Cluster;
 import org.mozilla.grouper.model.Collection;
 import org.mozilla.grouper.model.Document;
+import org.mozilla.grouper.model.Model;
 
-
+/**
+ * Provides database services.
+ *
+ * TODO: Actually this should be split into two interfaces. 1) a storage API hiding HBase details
+ * from clients by giving them Importer etc. The other as an internal interface to services like
+ * keys, schema and so on.
+ */
 public class Factory {
+
+    public String tableName(Class<?> model) {
+        return conf_.prefix() + tableByType.get(model);
+    }
 
     public Factory(Config conf) {
         conf_ = conf;
@@ -31,16 +43,12 @@ public class Factory {
         return hbaseConf_;
     }
 
-    public HTableInterface table(String name) {
+    HTableInterface table(Class<?> model) {
         return tableFactory_.createHTableInterface(hbaseConf_,
-                                                   Bytes.toBytes(tableName(name)));
+                                                   Bytes.toBytes(tableName(model)));
     }
 
-    public String tableName(String name) {
-        return conf_.prefix() + name;
-    }
-
-    public void release(HTableInterface table) {
+    void release(HTableInterface table) {
         tableFactory_.releaseHTableInterface(table);
     }
 
@@ -49,16 +57,16 @@ public class Factory {
         return new ReversePartsKeys();
     }
 
-    private static final Map<Class<?>, String> tableByType = new java.util.HashMap<Class<?>, String>();
+    private static final Map<Class<?>, String> tableByType = new HashMap<Class<?>, String>();
     static {
         tableByType.put(Cluster.class, Schema.T_CLUSTERS);
         tableByType.put(Document.class, Schema.T_DOCUMENTS);
         tableByType.put(Collection.class, Schema.T_COLLECTIONS);
     }
 
-    public <T> Importer<T> importer(Class<T> model) {
+    public <T extends Model> Importer<T> importer(Class<T> model) {
         Assert.check(tableByType.containsKey(model));
-        return new Importer<T>(this, tableByType.get(model));
+        return new Importer<T>(this, model);
     }
 
     private final Config conf_;

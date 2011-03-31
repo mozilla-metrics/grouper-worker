@@ -1,7 +1,7 @@
 package org.mozilla.grouper.hbase;
 
 
-public class SimpleKeys extends Keys {
+class SimpleKeys extends Keys {
 
     @Override
     protected String document(String ns, String ck, String docId) {
