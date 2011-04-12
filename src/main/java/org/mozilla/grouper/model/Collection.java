@@ -13,32 +13,42 @@ import java.util.Map;
  */
 public class Collection implements Model {
 
-    @Override
-    public CollectionRef ref() { return ref_; }
+  @Override public
+  CollectionRef ref() { return ref_; }
 
-    public Long get(Attribute attr) { return attributes_.get(attr); }
-    public Collection set(Attribute attr, Long value) { attributes_.put(attr, value); return this; }
-
-    public static enum Attribute {
-        /** The size of the collection. */
-        SIZE,
-        /** When the last document was added to the collection. */
-        MODIFIED,
-        /** When the last collection was (incrementally or fully) processed last. */
-        PROCESSED,
-        /** When the last full rebuild was started. */
-        REBUILT
-    }
+  public
+  Long get(Attribute attr) { return attributes_.get(attr); }
 
 
-    public Collection(CollectionRef ref) {
-        // Configuration independent:
-        ref_ = ref;
-        attributes_ = new java.util.HashMap<Attribute, Long>();
-    }
+  public
+  Collection set(Attribute attr, Long value) {
+    attributes_.put(attr, value);
+    return this;
+  }
 
-    private final Map<Attribute, Long> attributes_;
 
-    private final CollectionRef ref_;
+  public static enum Attribute {
+    /** The size of the collection. */
+    SIZE,
+    /** When the last document was added to the collection. */
+    MODIFIED,
+    /** When the last collection was (incrementally or fully) processed last. */
+    PROCESSED,
+    /** When the last full rebuild was started. */
+    REBUILT
+  }
+
+
+  public
+  Collection(CollectionRef ref) {
+    // Configuration independent:
+    ref_ = ref;
+    attributes_ = new java.util.HashMap<Attribute, Long>();
+  }
+
+
+  private final Map<Attribute, Long> attributes_;
+
+  private final CollectionRef ref_;
 
 }

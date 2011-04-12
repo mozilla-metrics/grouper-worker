@@ -14,70 +14,88 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
-import org.mozilla.grouper.base.Config;
+import org.mozilla.grouper.conf.Conf;
 import org.mozilla.grouper.hbase.Factory;
-import org.mozilla.grouper.hbase.Schema;
+import org.mozilla.grouper.hbase.Schema.Documents;
 import org.mozilla.grouper.model.CollectionRef;
 import org.mozilla.grouper.model.Document;
+
 
 /**
  * Export all documents into a directory, one file per map-task.
  *
  * This is part of the full rebuild and a prerequisite for vectorization.
  *
- * :TODO: We want a better partitioner (or something) here, so that regions
- * are only scanned if they can contain values with our prefix.
+ * TODO: We want a better partitioner so that regions are only looked at by a
+ *       mapper if they overlap with our prefix.
  */
 public class ExportDocuments extends AbstractCollectionTool {
 
-    final static String NAME = "export_documents";
-    public static final String TOOL_USAGE = "%s NAMESPACE COLLECTION_KEY\n";
+  final static String NAME = "export_documents";
+  public static final String TOOL_USAGE = "%s NAMESPACE COLLECTION_KEY\n";
 
-    static class ExportMapper extends TableMapper<Text, Text> {
-        public static enum Counters {
-            ROWS_USED
-        }
 
-        @Override
-        protected void map(ImmutableBytesWritable key,
-                           Result row,
-                           ExportMapper.Context context)
-        throws java.io.IOException, InterruptedException {
-            context.getCounter(Counters.ROWS_USED).increment(1);
-            byte[] documentID = row.getColumnLatest(Schema.CF_CONTENT, Schema.ID).getValue();
-            KeyValue text = row.getColumnLatest(Schema.CF_CONTENT, Schema.TEXT);
-            context.write(new Text(documentID), new Text(text.getValue()));
-        };
+  static class ExportMapper extends TableMapper<Text, Text> {
+    public static enum Counters {
+      ROWS_USED
     }
 
-    public ExportDocuments(Config conf, Configuration hadoopConf) { super(conf, hadoopConf); }
+    @Override protected
+    void map(ImmutableBytesWritable key,
+             Result row,
+             ExportMapper.Context context)
+    throws java.io.IOException, InterruptedException {
+      context.getCounter(Counters.ROWS_USED).increment(1);
+      byte[] documentID =
+        row.getColumnLatest(Documents.Main.FAMILY,
+                            Documents.Main.ID.qualifier).getValue();
+      KeyValue text = row.getColumnLatest(Documents.Main.FAMILY,
+                                          Documents.Main.TEXT.qualifier);
+      context.write(new Text(documentID), new Text(text.getValue()));
+    };
+  }
 
-    @Override
-    protected Job createSubmittableJob(CollectionRef collection, long timestamp) throws Exception {
-        final Configuration hadoopConf = this.getConf();
-        new Util(conf_).saveConfToHadoopConf(hadoopConf);
 
-        final Path outputDir = outputDir(collection, timestamp);
-        final String jobName = jobName(collection, timestamp);
-        final Job job = new Job(hadoopConf, jobName);
-        job.setJarByClass(AbstractCollectionTool.class);
-        job.setNumReduceTasks(0);
-        job.setOutputFormatClass(SequenceFileOutputFormat.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(Text.class);
-        FileOutputFormat.setOutputPath(job, outputDir);
+  public
+  ExportDocuments(Conf conf, Configuration hadoopConf) {
+    super(conf, hadoopConf);
+  }
 
-        // Set optional scan parameters
-        Scan scan = new Scan();
-        scan.setMaxVersions(1);
-        final Factory factory = new Factory(conf_);
-        scan.setFilter(new PrefixFilter(Bytes.toBytes(factory.keys().documentPrefix(collection))));
-        TableMapReduceUtil.initTableMapperJob(factory.tableName(Document.class),
-                                              scan, ExportMapper.class, null, null, job);
-        return job;
-    }
 
-    @Override
-    protected String name() { return NAME; }
+  @Override protected
+  Job createSubmittableJob(CollectionRef collection, long timestamp)
+  throws Exception {
+    final Configuration hadoopConf = this.getConf();
+    new Util(conf_).saveConfToHadoopConf(hadoopConf);
+
+    final Path outputDir = outputDir(collection, timestamp);
+    final String jobName = jobName(collection, timestamp);
+    final Job job = new Job(hadoopConf, jobName);
+
+    job.setJarByClass(AbstractCollectionTool.class);
+    job.setNumReduceTasks(0);
+    job.setOutputFormatClass(SequenceFileOutputFormat.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(Text.class);
+    FileOutputFormat.setOutputPath(job, outputDir);
+
+    // Set optional scan parameters
+    final Scan scan = new Scan();
+    scan.setMaxVersions(1);
+    final Factory factory = new Factory(conf_);
+    final String prefix = factory.keys().documentPrefix(collection);
+    scan.setFilter(new PrefixFilter(Bytes.toBytes(prefix)));
+
+    TableMapReduceUtil.initTableMapperJob(factory.tableName(Document.class),
+                                          scan, ExportMapper.class, null, null,
+                                          job);
+    return job;
+  }
+
+
+  @Override protected
+  String name() {
+    return NAME;
+  }
 
 }
