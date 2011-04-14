@@ -33,7 +33,7 @@ public class Importer<T extends Model> {
 
 
   public
-  void load(Iterable<T> input) {
+  void load(Iterable<T> input){
 
     log.debug("Starting import into table {}", tableName_);
     final ExecutorService workers = workers();
@@ -56,7 +56,15 @@ public class Importer<T extends Model> {
 
     // Submit will block until it is safe to shut down:
     shutdownGracefully(workers);
-    for (HTableInterface t: tables_) factory_.release(t);
+    try {
+      for (HTableInterface table: tables_) {
+        table.flushCommits();
+        factory_.release(table);
+      }
+    }
+    catch (IOException flushFail) {
+      log.error("Could not import buffer!", flushFail);
+    }
   }
 
 

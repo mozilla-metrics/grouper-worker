@@ -146,24 +146,26 @@ class Adapters {
       for (Attribute a : Collection.Attribute.values()) {
         if (collection.get(a) == null) continue;
         switch (a) {
-        case REBUILT:
-          // :TODO: get rid of JSON for meta data (bad idea (tm)).
-          final String json =
-            String.format("{\"lastRebuild\": %d}", collection.get(a));
-          put.add(Collections.Main.FAMILY,
-                  Schema.qualifier(Collections.Main.CONFIGURATION, "DEFAULT"),
-                  Bytes.toBytes(json));
-          break;
-        case SIZE:
-          put.add(Collections.Main.FAMILY,
-                  Collections.Main.SIZE.qualifier,
-                  Bytes.toBytes(collection.get(a).toString()));
-          break;
-        case MODIFIED:
-        case PROCESSED:
-          // :TODO: handle these attributes
-        default:
-          Assert.unreachable("not implemented");
+          case MODIFIED:
+            put.add(Collections.Main.FAMILY,
+                    Collections.Main.SIZE.qualifier,
+                    Bytes.toBytes(collection.get(a).toString()));
+            break;
+          case SIZE:
+            put.add(Collections.Main.FAMILY,
+                    Collections.Main.SIZE.qualifier,
+                    Bytes.toBytes(collection.get(a).toString()));
+            break;
+          case REBUILT:
+            put.add(Collections.Main.FAMILY,
+                    Schema.qualifier(Collections.Main.CONFIGURATION,
+                                     "DEFAULT:rebuilt"),
+                    Bytes.toBytes(collection.get(a).toString()));
+          case PROCESSED:
+            // :TODO:
+            break;
+          default:
+            Assert.unreachable("Unknown collection attribute: ", a.name());
         }
       }
       return put;
