@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.apache.hadoop.util.Tool;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.conf.Conf;
 import org.mozilla.grouper.jobs.textcluster.TextClusterTool;
+import org.mozilla.grouper.model.CollectionRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +29,11 @@ public class Util {
   Util(Conf conf) {
     Assert.nonNull(conf);
     conf_ = conf;
-    availableTools_.put(ExportDocuments.NAME,    ExportDocuments.class);
-    availableTools_.put(VectorizeDocuments.NAME, VectorizeDocuments.class);
-    availableTools_.put(TextClusterTool.NAME,    TextClusterTool.class);
+    tools_.put(ExportDocuments.NAME,    ExportDocuments.class);
+    tools_.put(VectorizeDocuments.NAME, VectorizeDocuments.class);
+    tools_.put(TextClusterTool.NAME,    TextClusterTool.class);
+    tools_.put(Rebuild.NAME,            Rebuild.class);
+    tools_.put(RebuildAll.NAME,         RebuildAll.class);
   }
 
 
@@ -34,12 +41,11 @@ public class Util {
   public
   int run(String toolName, String[] args) {
     Configuration hadoopConf = HBaseConfiguration.create();
-    AbstractCollectionTool tool;
+    Tool tool;
     try {
-      Class<? extends AbstractCollectionTool> toolType =
-        availableTools_.get(toolName);
+      Class<? extends Tool> toolType = tools_.get(toolName);
       tool = toolType.getConstructor(Conf.class, Configuration.class)
-      .newInstance(new Object[]{conf_, hadoopConf});
+                     .newInstance(new Object[]{conf_, hadoopConf});
     }
     catch (Exception e) {
       log.error("Could not instantiate the requested tool: " + toolName, e);
@@ -65,6 +71,26 @@ public class Util {
     }
   }
 
+  public
+  Path outputDir(CollectionRef collection,
+                 long timestamp,
+                 CollectionTool tool) {
+    return new Path(
+        new StringBuilder()
+        .append(conf_.get(CONF_DFS_ROOT)).append('/')
+        .append(Long.toString(timestamp)).append('/')
+        .append(mangle(collection.namespace())).append('_')
+        .append(mangle(collection.key())).append('/')
+        .append(tool.name())
+        .toString()
+    );
+  }
+
+
+  private
+  String mangle(String source) {
+    return DigestUtils.md5Hex(Bytes.toBytes(source)).substring(0, 8);
+  }
 
   /**
    * Stores the Grouperfish configuration into the hadoop configuration,
@@ -89,13 +115,15 @@ public class Util {
 
 
   private final
-  Map<String, Class<? extends AbstractCollectionTool>> availableTools_ =
-    new HashMap<String, Class<? extends AbstractCollectionTool>>();
+  Map<String, Class<? extends Tool>> tools_ =
+    new HashMap<String, Class<? extends Tool>>();
 
   private static final Logger log = LoggerFactory.getLogger(Util.class);
 
   private final Conf conf_;
 
   private static final String HADOOP_CONF_KEY = "org.mozilla.grouperfish.conf";
+
+  private static final String CONF_DFS_ROOT = "worker:dfs:root";
 
 }

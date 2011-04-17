@@ -27,12 +27,12 @@ public class VectorizeDocuments extends AbstractCollectionTool {
   }
 
 
-  @Override protected
+  @Override public
   int run(CollectionRef collection, long timestamp)  throws Exception {
     final Configuration hadoopConf = getConf();
-    AbstractCollectionTool source = new ExportDocuments(conf_, hadoopConf);
-    final Path inputDir = source.outputDir(collection, timestamp);
-    final Path outputDir = outputDir(collection, timestamp);
+    CollectionTool source = new ExportDocuments(conf_, hadoopConf);
+    final Path inputDir = util_.outputDir(collection, timestamp, source);
+    final Path outputDir = util_.outputDir(collection, timestamp, this);
 
     // 1. Tokenize
     Class<? extends Analyzer> analyzerClass = DefaultAnalyzer.class;
@@ -88,7 +88,7 @@ public class VectorizeDocuments extends AbstractCollectionTool {
   }
 
 
-  @Override protected
+  @Override public
   String name() {
     return NAME;
   }

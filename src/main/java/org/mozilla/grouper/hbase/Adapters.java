@@ -1,14 +1,14 @@
 package org.mozilla.grouper.hbase;
 
+
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.hbase.Schema.Clusters;
-import org.mozilla.grouper.hbase.Schema.Collections;
 import org.mozilla.grouper.hbase.Schema.Documents;
 import org.mozilla.grouper.model.Cluster;
 import org.mozilla.grouper.model.Collection;
-import org.mozilla.grouper.model.Collection.Attribute;
 import org.mozilla.grouper.model.CollectionRef;
 import org.mozilla.grouper.model.Document;
 import org.mozilla.grouper.model.DocumentRef;
@@ -32,7 +32,8 @@ class Adapters {
   }
 
 
-  static public class ClusterAdapter implements RowAdapter<Cluster> {
+  static
+  class ClusterAdapter implements RowAdapter<Cluster> {
 
     final Factory factory_;
 
@@ -80,9 +81,14 @@ class Adapters {
       return put;
     }
 
-    @Override
-    public String key(Cluster cluster) {
+    @Override public
+    String key(Cluster cluster) {
       return factory_.keys().key(cluster);
+    }
+
+    @Override public
+    Cluster read(Result next) {
+      return Assert.unreachable(Cluster.class, "Not implemented.");
     }
   }
 
@@ -117,63 +123,10 @@ class Adapters {
     public String key(Document doc) {
       return factory_.keys().key(doc);
     }
-  }
 
-
-  static
-  class CollectionAdapter implements RowAdapter<Collection> {
-
-    final Factory factory_;
-
-    public
-    CollectionAdapter(Factory factory) {
-      factory_ = factory;
-    }
-
-    @Override
-    public
-    Put put(Collection collection) {
-      CollectionRef ref = collection.ref();
-      Put put = new Put(Bytes.toBytes(key(collection)))
-      .add(Collections.Main.FAMILY,
-           Collections.Main.NAMESPACE.qualifier,
-           Bytes.toBytes(ref.namespace()))
-      .add(Collections.Main.FAMILY,
-           Collections.Main.KEY.qualifier,
-           Bytes.toBytes(ref.key()));
-
-      // Only attributes that were specified by the caller are stored.
-      for (Attribute a : Collection.Attribute.values()) {
-        if (collection.get(a) == null) continue;
-        switch (a) {
-          case MODIFIED:
-            put.add(Collections.Main.FAMILY,
-                    Collections.Main.SIZE.qualifier,
-                    Bytes.toBytes(collection.get(a).toString()));
-            break;
-          case SIZE:
-            put.add(Collections.Main.FAMILY,
-                    Collections.Main.SIZE.qualifier,
-                    Bytes.toBytes(collection.get(a).toString()));
-            break;
-          case REBUILT:
-            put.add(Collections.Main.FAMILY,
-                    Schema.qualifier(Collections.Main.CONFIGURATION,
-                                     "DEFAULT:rebuilt"),
-                    Bytes.toBytes(collection.get(a).toString()));
-          case PROCESSED:
-            // :TODO:
-            break;
-          default:
-            Assert.unreachable("Unknown collection attribute: ", a.name());
-        }
-      }
-      return put;
-    }
-
-    @Override
-    public String key(Collection collection) {
-      return factory_.keys().key(collection.ref());
+    @Override public
+    Document read(Result next) {
+      return Assert.unreachable(Document.class, "Not implemented.");
     }
   }
 }

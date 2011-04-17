@@ -32,7 +32,6 @@ import org.mozilla.grouper.model.Document;
 public class ExportDocuments extends AbstractCollectionTool {
 
   final static String NAME = "export_documents";
-  public static final String TOOL_USAGE = "%s NAMESPACE COLLECTION_KEY\n";
 
 
   static class ExportMapper extends TableMapper<Text, Text> {
@@ -68,7 +67,7 @@ public class ExportDocuments extends AbstractCollectionTool {
     final Configuration hadoopConf = this.getConf();
     new Util(conf_).saveConfToHadoopConf(hadoopConf);
 
-    final Path outputDir = outputDir(collection, timestamp);
+    final Path outputDir = util_.outputDir(collection, timestamp, this);
     final String jobName = jobName(collection, timestamp);
     final Job job = new Job(hadoopConf, jobName);
 
@@ -93,7 +92,7 @@ public class ExportDocuments extends AbstractCollectionTool {
   }
 
 
-  @Override protected
+  @Override public
   String name() {
     return NAME;
   }

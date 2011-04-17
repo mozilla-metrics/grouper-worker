@@ -51,13 +51,16 @@ public class Factory {
   }
 
 
-
   public <T extends Model>
   Importer<T> importer(Class<T> model) {
-    Assert.check(tableByType_.containsKey(model));
     return new Importer<T>(this, model);
   }
 
+
+  public <T extends Model>
+  Iterable<T> source(Class<T> model) {
+    return new Source<T>(this, model);
+  }
 
   /** Row keys that must be in sync with those used by the REST service. */
   public
@@ -68,6 +71,7 @@ public class Factory {
 
   public
   String tableName(final Class<?> model) {
+    Assert.check(tableByType_.containsKey(model));
     return prefix_ + tableByType_.get(model);
   }
 

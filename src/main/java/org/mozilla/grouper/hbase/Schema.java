@@ -26,7 +26,7 @@ public abstract class Schema {
       TEXT,
       MEMBER_OF;
 
-      public byte[] qualifier = qualifier(this);
+      public byte[] qualifier = asQualifier(this);
       public static final byte[] FAMILY = family(Main.class);
     }
 
@@ -36,7 +36,7 @@ public abstract class Schema {
       VECTOR_IDF,
       VECTOR_TFIDF;
 
-      public byte[] qualifier = qualifier(this);
+      public byte[] qualifier = asQualifier(this);
       public static final byte[] FAMILY = family(Processing.class);
     }
   }
@@ -51,20 +51,36 @@ public abstract class Schema {
     enum Main {
       NAMESPACE,
       KEY,
-      ID,
       SIZE,
-      CONFIGURATION;
+      MODIFIED;
 
-      public byte[] qualifier = qualifier(this);
+      /** These qualifiers are used per clustering configuration. */
+      public static
+      enum Configuration {
+        REBUILT,
+        PROCESSED;
+
+        /**
+         * Produces a configuration-specific qualifier.
+         *
+         * @param configuration Name of the configuration the attribute is of.
+         * @return A column qualifier for use with the HBase api.
+         */
+        public
+        byte[] qualifier(final String configuration) {
+          return Bytes.toBytes(configuration + ':' + asQualifier(this));
+        }
+      }
+
+      public byte[] qualifier = asQualifier(this);
       public static final byte[] FAMILY = family(Main.class);
     }
 
     public static
     enum Processing {
-      DICTIONARY,
-      ID;
+      DICTIONARY;
 
-      public byte[] qualifier = qualifier(this);
+      public byte[] qualifier = asQualifier(this);
       public static final byte[] FAMILY = family(Processing.class);
     }
   }
@@ -83,7 +99,7 @@ public abstract class Schema {
       LABEL,
       SIZE;
 
-      public byte[] qualifier = qualifier(this);
+      public byte[] qualifier = asQualifier(this);
       public static final byte[] FAMILY = family(Main.class);
     }
 
@@ -96,25 +112,6 @@ public abstract class Schema {
   }
 
 
-  /**
-   * Produces a multipart column qualifier starting with the given qualifier
-   * prefix. Parts are separated using colon ':'. Example: define multiple
-   * configurations by using the {@link Collections.Main#CONFIGURATION}
-   * qualifier as the prefix, a configuration name (e.g. "DEFAULT") as infix,
-   * and individual configuration keys as suffix.
-   *
-   * @param column First part of the multipart qualifier.
-   * @param parts The following parts.
-   * @return A column qualifier for use with the HBase api.
-   */
-  public static
-  byte[] qualifier(Enum<?> column, String... parts) {
-    StringBuilder builder = new StringBuilder(column.name().toLowerCase());
-    for (String part : parts) builder.append(':').append(part);
-    return Bytes.toBytes(builder.toString());
-  }
-
-
   private static
   byte[] family(Class<?> clazz) {
     return Bytes.toBytes(clazz.getSimpleName().toLowerCase());
@@ -122,7 +119,7 @@ public abstract class Schema {
 
 
   private static
-  byte[] qualifier(Enum<?> column) {
+  byte[] asQualifier(Enum<?> column) {
     return Bytes.toBytes(column.name().toLowerCase());
   }
 

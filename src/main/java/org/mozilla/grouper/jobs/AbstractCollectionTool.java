@@ -3,15 +3,12 @@ package org.mozilla.grouper.jobs;
 
 import java.util.Date;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
-import org.mortbay.log.Log;
 import org.mozilla.grouper.base.Assert;
 import org.mozilla.grouper.conf.Conf;
 import org.mozilla.grouper.model.CollectionRef;
@@ -24,13 +21,14 @@ import org.slf4j.LoggerFactory;
  * Collection tools should be stateless (except for having configuration).
  */
 public abstract class AbstractCollectionTool
-extends Configured implements Tool {
+extends Configured implements Tool, CollectionTool {
 
   public
   AbstractCollectionTool(Conf conf, Configuration hadoopConf) {
     Assert.nonNull(conf, hadoopConf);
     this.setConf(hadoopConf);
     conf_ = conf;
+    util_ = new Util(conf);
   }
 
 
@@ -48,7 +46,17 @@ extends Configured implements Tool {
 
     CollectionRef collection = new CollectionRef(args[0], args[1]);
 
-    final Path dest = outputDir(collection, timestamp);
+    return run(collection, timestamp);
+  }
+
+
+  /**
+   * @see CollectionTool#run(CollectionRef, long)
+   */
+  @Override public
+  int run(CollectionRef collection, long timestamp) throws Exception {
+
+    final Path dest = util_.outputDir(collection, timestamp, this);
     FileSystem fs = FileSystem.get(dest.toUri(), getConf());
     if (fs.exists(dest)) {
       // Should not happen in everyday usage, due to locking + timestamp.
@@ -57,42 +65,13 @@ extends Configured implements Tool {
       fs.delete(dest, true);
     }
 
-    return run(collection, timestamp);
-  }
-
-
-  public
-  Path outputDir(CollectionRef collection, long timestamp) {
-    return new Path(
-        new StringBuilder()
-        .append(conf_.get(CONF_DFS_ROOT)).append('/')
-        .append(Long.toString(timestamp)).append('/')
-        .append(mangle(collection.namespace())).append('_')
-        .append(mangle(collection.key())).append('/')
-        .append(name())
-        .toString()
-    );
-  }
-
-
-  /**
-   * Run tool (on hadoop).
-   *
-   * @param collection The collection this job is about.
-   * @param timestamp  What is considered "the time" of the job, e.g. for
-   *                   a cluster rebuild, this becomes the "last rebuild
-   *                   time".
-   * @return A job that can be submitted.
-   */
-  protected
-  int run(CollectionRef collection, long timestamp) throws Exception {
     Job job = createSubmittableJob(collection, timestamp);
-    Log.info("Running job: {}", job.getJobName());
+    log.info("Running job: {}", job.getJobName());
     return job.waitForCompletion(true) ? 0 : 1;
   }
 
 
-  protected
+  public
   String jobName(CollectionRef c, long timestamp) {
     return String.format("Grouperfish:%s %s/%s/%s",
                          name(), timestamp, c.namespace(), c.key());
@@ -108,7 +87,7 @@ extends Configured implements Tool {
   protected
   Job createSubmittableJob(CollectionRef collection, long timestamp)
       throws Exception {
-    return null;
+    return Assert.unreachable(Job.class);
   }
 
 
@@ -126,20 +105,8 @@ extends Configured implements Tool {
   }
 
 
-  /** The name of the tool (not the job name used by hadoop). */
-  protected abstract
-  String name();
-
-
-  private
-  String mangle(String source) {
-    return DigestUtils.md5Hex(Bytes.toBytes(source)).substring(0, 8);
-  }
-
-
   protected final Conf conf_;
-
-  private static final String CONF_DFS_ROOT = "worker:dfs:root";
+  protected final Util util_;
 
   private static final Logger log =
     LoggerFactory.getLogger(AbstractCollectionTool.class);

@@ -2,6 +2,7 @@ package org.mozilla.grouper.input;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -65,8 +66,9 @@ public class StreamImporter {
     List<Collection> collections = new java.util.ArrayList<Collection>();
     for (CollectionRef ref : collectionRefs.values()) {
       counters[Counters.COLLECTIONS_CREATED.ordinal()]++;
-      Collection c = new Collection(ref).set(Attribute.SIZE,
-                                             sizes.get(ref.key()).longValue());
+      Collection c = new Collection(ref);
+      c.set(Attribute.SIZE, sizes.get(ref.key()).longValue());
+      c.set(Attribute.MODIFIED, new Date().getTime());
       collections.add(c);
     }
 

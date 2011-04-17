@@ -21,6 +21,7 @@ import org.mozilla.grouper.conf.Conf;
 import org.mozilla.grouper.hbase.Factory;
 import org.mozilla.grouper.hbase.Importer;
 import org.mozilla.grouper.jobs.AbstractCollectionTool;
+import org.mozilla.grouper.jobs.CollectionTool;
 import org.mozilla.grouper.jobs.Histogram;
 import org.mozilla.grouper.jobs.VectorizeDocuments;
 import org.mozilla.grouper.model.BaseCluster;
@@ -41,11 +42,11 @@ public class TextClusterTool extends AbstractCollectionTool {
   }
 
 
-  @Override protected
+  @Override public
   String name() { return NAME; }
 
 
-  @Override protected
+  @Override public
   int run(CollectionRef collection, long timestamp) throws Exception {
     return run(collection, timestamp, true);
   }
@@ -67,9 +68,8 @@ public class TextClusterTool extends AbstractCollectionTool {
     // In memory version.
     // :TODO: Add mapper+reducer based on divide & conquer (chunk & merge),
     //        maybe also based on more thorough parallelization.
-    final AbstractCollectionTool source = new VectorizeDocuments(conf_,
-                                                                 getConf());
-    final Path inputDir = source.outputDir(collection, timestamp);
+    final CollectionTool source = new VectorizeDocuments(conf_, getConf());
+    final Path inputDir = util_.outputDir(collection, timestamp, source);
     final Path p = new Path(inputDir, "tfidf-vectors/part-r-00000");
 
     List<BaseCluster> stage1 = fromVectors(p);
